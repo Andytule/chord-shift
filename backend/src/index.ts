@@ -1,8 +1,7 @@
-import express from "express";
-import cors from "cors";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-import { Express } from "express";
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express, { Express } from 'express';
 
 dotenv.config();
 
@@ -12,23 +11,23 @@ const port: string | 5000 = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Supabase client (using anon key for now – safe for read/write demos)
-const supabaseUrl: string = process.env.SUPABASE_URL || "";
-const supabaseKey: string = process.env.SUPABASE_ANON_KEY || "";
-const supabase: SupabaseClient<any, "public", "public", any, any> =
-  createClient(supabaseUrl, supabaseKey);
+const supabaseUrl: string = process.env.SUPABASE_URL || '';
+const supabaseKey: string = process.env.SUPABASE_ANON_KEY || '';
+const supabase: SupabaseClient<any, 'public', 'public', any, any> = createClient(
+  supabaseUrl,
+  supabaseKey
+);
 
-// Simple root route to confirm server works
-app.get("/", (req, res) => {
-  res.json({ message: "ChordShift Backend is running" });
+app.get('/', (req, res) => {
+  res.json({ message: 'ChordShift Backend is running' });
 });
 
-app.get("/sheets", async (req, res) => {
+app.get('/sheets', async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from("chord_sheets")
-      .select("*")
-      .order("created_at", { ascending: false })
+      .from('chord_sheets')
+      .select('*')
+      .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) throw error;
@@ -39,8 +38,7 @@ app.get("/sheets", async (req, res) => {
   }
 });
 
-// Test endpoint: insert + fetch a dummy chord sheet
-app.get("/test-db", async (req, res) => {
+app.get('/test-db', async (req, res) => {
   try {
     const sampleSheetText = `
 ([Intro]
@@ -62,41 +60,39 @@ Still my anxious heart
 ...
     `.trim();
 
-    // Insert sample data
     const { data: insertData, error: insertError } = await supabase
-      .from("chord_sheets")
+      .from('chord_sheets')
       .insert({
         sheet_text: sampleSheetText,
-        key: "F major",
+        key: 'F major',
       })
       .select();
 
     if (insertError) throw insertError;
 
-    // Fetch recent sheets
     const { data: sheets, error: fetchError } = await supabase
-      .from("chord_sheets")
-      .select("*")
-      .order("created_at", { ascending: false })
+      .from('chord_sheets')
+      .select('*')
+      .order('created_at', { ascending: false })
       .limit(5);
 
     if (fetchError) throw fetchError;
 
     res.json({
-      message: "DB test successful",
+      message: 'DB test successful',
       inserted: insertData,
       recent_sheets: sheets,
     });
   } catch (error: any) {
-    console.error("DB test error:", error);
-    res.status(500).json({ 
-      error: error.message || "Unknown error",
-      details: error.details || error.hint || "No additional details"
+    console.error('DB test error:', error);
+    res.status(500).json({
+      error: error.message || 'Unknown error',
+      details: error.details || error.hint || 'No additional details',
     });
   }
 });
 
 app.listen(port, () => {
   console.log(`Backend running at http://localhost:${port}`);
-  console.log("Test DB connection: http://localhost:5000/test-db");
+  console.log('Test DB connection: http://localhost:5000/test-db');
 });
