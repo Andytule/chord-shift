@@ -1,12 +1,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import express, { Express } from 'express';
+import express from 'express';
 
 dotenv.config();
 
-const app: Express = express();
-const port: string | 5000 = process.env.PORT || 5000;
+const app = express();
+const port: string | 5001 = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
@@ -104,5 +104,5 @@ Still my anxious heart
 
 app.listen(port, () => {
   console.log(`Backend running at http://localhost:${port}`);
-  console.log('Test DB connection: http://localhost:5000/test-db');
+  console.log('Test DB connection: http://localhost:5001/test-db');
 });
