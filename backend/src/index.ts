@@ -13,10 +13,7 @@ app.use(express.json());
 
 const supabaseUrl: string = process.env.SUPABASE_URL || '';
 const supabaseKey: string = process.env.SUPABASE_ANON_KEY || '';
-const supabase: SupabaseClient<any, 'public', 'public', any, any> = createClient(
-  supabaseUrl,
-  supabaseKey
-);
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 
 app.get('/', (req, res) => {
   res.json({ message: 'ChordShift Backend is running' });
@@ -33,8 +30,10 @@ app.get('/sheets', async (req, res) => {
     if (error) throw error;
 
     res.json({ sheets: data });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({
+      error: (error as Error).message || String(error),
+    });
   }
 });
 
@@ -83,11 +82,22 @@ Still my anxious heart
       inserted: insertData,
       recent_sheets: sheets,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('DB test error:', error);
+
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    let details = 'No additional details';
+    if (error && typeof error === 'object' && 'details' in error) {
+      details = String((error as { details?: unknown }).details ?? details);
+    }
+    if (error && typeof error === 'object' && 'hint' in error) {
+      details += ` | Hint: ${String((error as { hint?: unknown }).hint)}`;
+    }
+
     res.status(500).json({
-      error: error.message || 'Unknown error',
-      details: error.details || error.hint || 'No additional details',
+      error: message,
+      details,
     });
   }
 });
