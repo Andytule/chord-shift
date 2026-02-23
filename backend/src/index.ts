@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 
+import type { Database } from '../../types/supabase';
+
 dotenv.config();
 
 const app = express();
@@ -13,7 +15,7 @@ app.use(express.json());
 
 const supabaseUrl: string = process.env.SUPABASE_URL || '';
 const supabaseKey: string = process.env.SUPABASE_ANON_KEY || '';
-const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseKey);
 
 app.get('/', (req, res) => {
   res.json({ message: 'ChordShift Backend is running' });
