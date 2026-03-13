@@ -1,11 +1,10 @@
+import './env';
+
 import cors from 'cors';
-import dotenv from 'dotenv';
 import express from 'express';
 
 import sheetsRouter from './routes/sheets';
 import transposeRouter from './routes/transpose';
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5001;
