@@ -59,6 +59,7 @@ export default [
         typescript: {
           alwaysTryTypes: true,
           project: './tsconfig.json',
+          tsconfigRootDir: process.cwd(),
         },
       },
     },
