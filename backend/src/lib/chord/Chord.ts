@@ -2,7 +2,7 @@
 // Represents a single chord token. Holds its name and knows
 // how to transpose itself via the SemitoneTransposer.
 
-import { SemitoneTransposer } from '../transposer/SemitoneTransposer';
+import { SemitoneTransposer } from '../transposers/SemitoneTransposer';
 import type { ChordComponent } from './ChordComponent';
 
 const transposer = new SemitoneTransposer();

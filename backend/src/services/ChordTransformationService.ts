@@ -5,7 +5,7 @@
 
 import { Chord } from '../lib/chord/Chord';
 import { ChordProgression } from '../lib/chord/ChordProgression';
-import type { TranspositionStrategy } from '../lib/transposer/TranspositionStrategy';
+import type { TranspositionStrategy } from '../lib/transposers/TranspositionStrategy';
 import { type StrategyType, TransformationFactory } from './TransformationFactory';
 
 // Matches chord tokens: root note + optional sharp/flat + optional quality suffix
