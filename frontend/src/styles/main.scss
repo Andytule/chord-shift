@@ -546,3 +546,68 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+// ─── Additions & Overrides ───────────────────────────────────────────────────
+
+// White text in chord textarea
+.sheet-textarea {
+  color: #ffffff;
+}
+
+// Danger button (for delete confirm)
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  background: $red;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  height: 32px;
+  transition: background 0.15s;
+
+  &:hover { background: darken($red, 8%); }
+}
+
+// Name input + key select in controls bar
+.control-input,
+.control-select {
+  height: 30px;
+  background: $bg-input;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  font-size: 0.85rem;
+  padding: 0 10px;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: $border-focus;
+  }
+
+  &::placeholder { color: $text-muted; }
+
+  option { background: $bg-surface; }
+}
+
+.control-select {
+  padding-right: 28px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2380848e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+
+.control-group--name .control-input {
+  width: 180px;
+}
+
+// btn-link spacing in header
+.header__right .btn-link {
+  margin-right: $spacing-sm;
+  font-size: 0.875rem;
+}
