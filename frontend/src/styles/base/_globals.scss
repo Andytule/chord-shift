@@ -1,6 +1,16 @@
 @use '../abstracts/variables' as *;
 
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
-  background-color: $primary-color;
+  background-color: $bg-base;
+  color: $text-primary;
+  font-family: $font-ui;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
+
+button { cursor: pointer; border: none; background: none; font-family: $font-ui; }
+input, textarea { font-family: $font-ui; }

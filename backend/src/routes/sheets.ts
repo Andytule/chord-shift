@@ -51,11 +51,15 @@ router.get('/:id', async (req, res) => {
 
 // POST /sheets
 // Saves a new chord sheet.
-// Body: { sheet_text: string, key?: string }
+// Body: { name: string, sheet_text: string, key?: string }
 router.post('/', async (req, res) => {
   try {
-    const { sheet_text, key } = req.body;
+    const { name, sheet_text, key } = req.body;
 
+    if (typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({ error: 'name is required' });
+      return;
+    }
     if (typeof sheet_text !== 'string' || sheet_text.trim() === '') {
       res.status(400).json({ error: 'sheet_text is required' });
       return;
@@ -63,7 +67,7 @@ router.post('/', async (req, res) => {
 
     const { data, error } = await supabase
       .from('chord_sheets')
-      .insert({ sheet_text, key: key ?? null })
+      .insert({ name, sheet_text, key: key ?? null })
       .select()
       .single();
 
@@ -77,10 +81,10 @@ router.post('/', async (req, res) => {
 
 // PUT /sheets/:id
 // Overwrites an existing sheet with transposed content and updated key.
-// Body: { sheet_text: string, key?: string }
+// Body: { name?: string, sheet_text: string, key?: string }
 router.put('/:id', async (req, res) => {
   try {
-    const { sheet_text, key } = req.body;
+    const { name, sheet_text, key } = req.body;
 
     if (typeof sheet_text !== 'string' || sheet_text.trim() === '') {
       res.status(400).json({ error: 'sheet_text is required' });
@@ -90,6 +94,7 @@ router.put('/:id', async (req, res) => {
     const { data, error } = await supabase
       .from('chord_sheets')
       .update({
+        ...(name ? { name } : {}),
         sheet_text,
         key: key ?? null,
         updated_at: new Date().toISOString(),
