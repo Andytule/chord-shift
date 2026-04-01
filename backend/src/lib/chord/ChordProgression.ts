@@ -12,7 +12,7 @@ export class ChordProgression implements ChordComponent {
   }
 
   remove(component: ChordComponent): void {
-    const index = this.children.indexOf(component);
+    const index: number = this.children.indexOf(component);
     if (index !== -1) this.children.splice(index, 1);
   }
 

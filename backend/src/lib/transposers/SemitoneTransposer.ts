@@ -25,15 +25,15 @@ const FLAT_KEYS = new Set([
 ]);
 
 function shouldUseFlats(root: string, semitones: number): boolean {
-  const index = SHARPS.indexOf(root) !== -1 ? SHARPS.indexOf(root) : FLATS.indexOf(root);
+  const index: number = SHARPS.indexOf(root) !== -1 ? SHARPS.indexOf(root) : FLATS.indexOf(root);
   if (index === -1) return false;
-  const newIndex = (((index + semitones) % 12) + 12) % 12;
+  const newIndex: number = (((index + semitones) % 12) + 12) % 12;
   return FLAT_KEYS.has(SHARPS[newIndex]) || FLAT_KEYS.has(SHARPS[newIndex] + 'm');
 }
 
 // Parses "C#m7" → { root: "C#", suffix: "m7" }
 function parseChord(chord: string): { root: string; suffix: string } | null {
-  const match = chord.match(/^([A-G][#b]?)(.*)$/);
+  const match: RegExpMatchArray | null = chord.match(/^([A-G][#b]?)(.*)$/);
   if (!match) return null;
   return { root: match[1], suffix: match[2] };
 }
@@ -45,12 +45,12 @@ export class SemitoneTransposer implements TranspositionStrategy {
 
     const { root, suffix } = parsed;
 
-    let index = SHARPS.indexOf(root);
+    let index: number = SHARPS.indexOf(root);
     if (index === -1) index = FLATS.indexOf(root);
     if (index === -1) return chordName;
 
-    const newIndex = (((index + amount) % 12) + 12) % 12;
-    const newRoot = shouldUseFlats(root, amount) ? FLATS[newIndex] : SHARPS[newIndex];
+    const newIndex: number = (((index + amount) % 12) + 12) % 12;
+    const newRoot: string = shouldUseFlats(root, amount) ? FLATS[newIndex] : SHARPS[newIndex];
 
     return newRoot + suffix;
   }

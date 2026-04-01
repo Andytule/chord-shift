@@ -1,9 +1,12 @@
 import { Router } from 'express';
 
-import { ChordTransformationService } from '../services/ChordTransformationService';
+import {
+  ChordTransformationService,
+  TransformResult,
+} from '../services/ChordTransformationService';
 import type { StrategyType } from '../services/TransformationFactory';
 
-const router = Router();
+const router: Router = Router();
 
 // POST /transpose
 // Transposes a chord sheet and returns the result. Does not persist anything.
@@ -29,7 +32,7 @@ router.post('/', (req, res) => {
       return;
     }
 
-    const amount =
+    const amount: number =
       strategy === 'capo'
         ? typeof capoFret === 'number'
           ? capoFret
@@ -38,9 +41,11 @@ router.post('/', (req, res) => {
           ? semitones
           : 0;
 
-    const service = new ChordTransformationService(strategy as StrategyType);
-    const result = service.transform(sheetText, amount);
-    const detectedKey = service.detectKey(result.transposedText);
+    const service: ChordTransformationService = new ChordTransformationService(
+      strategy as StrategyType
+    );
+    const result: TransformResult = service.transform(sheetText, amount);
+    const detectedKey: string | null = service.detectKey(result.transposedText);
 
     res.json({ ...result, detectedKey });
   } catch (error) {

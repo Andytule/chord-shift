@@ -5,7 +5,7 @@
 import { SemitoneTransposer } from '../transposers/SemitoneTransposer';
 import type { ChordComponent } from './ChordComponent';
 
-const transposer = new SemitoneTransposer();
+const transposer: SemitoneTransposer = new SemitoneTransposer();
 
 export class Chord implements ChordComponent {
   private name: string;

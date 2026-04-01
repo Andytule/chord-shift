@@ -3,7 +3,7 @@ import { Router } from 'express';
 
 import type { Database } from '../../../types/supabase';
 
-const router = Router();
+const router: Router = Router();
 
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL ?? '',

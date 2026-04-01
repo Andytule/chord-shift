@@ -10,17 +10,29 @@ import { type StrategyType, TransformationFactory } from './TransformationFactor
 
 // Matches chord tokens: root note + optional sharp/flat + optional quality suffix
 // Handles: Am, C#m7, Gsus4, Bb/F, Fmaj7, Ddim, Baug, etc.
-const CHORD_REGEX = /\b([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G][#b]?)?)\b/g;
+const CHORD_REGEX: RegExp =
+  /\b([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G][#b]?)?)\b/g;
 
 // Common English words that match the chord regex but are not chords
-const EXCLUDED_WORDS = new Set(['A', 'Be', 'Add', 'Age', 'Bag', 'Bed', 'Cab', 'Dad', 'Fab', 'Fad']);
+const EXCLUDED_WORDS: Set<string> = new Set([
+  'A',
+  'Be',
+  'Add',
+  'Age',
+  'Bag',
+  'Bed',
+  'Cab',
+  'Dad',
+  'Fab',
+  'Fad',
+]);
 
 // A line is treated as a chord line if at least half its tokens start with a note name.
 // This prevents transposing words inside lyric lines.
 function isChordLine(line: string): boolean {
-  const tokens = line.trim().split(/\s+/).filter(Boolean);
+  const tokens: string[] = line.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return false;
-  const chordLike = tokens.filter((t) => /^[A-G][#b]?/.test(t)).length;
+  const chordLike: number = tokens.filter((t) => /^[A-G][#b]?/.test(t)).length;
   return chordLike / tokens.length >= 0.5;
 }
 
@@ -55,12 +67,12 @@ export class ChordTransformationService {
 
           // Build a Chord leaf and wrap in a ChordProgression composite,
           // then delegate transposition uniformly via the composite interface
-          const chord = new Chord(match);
-          const progression = new ChordProgression();
+          const chord: Chord = new Chord(match);
+          const progression: ChordProgression = new ChordProgression();
           progression.add(chord);
           progression.transpose(amount);
 
-          const transposed = chord.toString();
+          const transposed: string = chord.toString();
           originalChords.push(match);
           transposedChords.push(transposed);
 
@@ -74,12 +86,12 @@ export class ChordTransformationService {
 
   // Detects the likely key by finding the most frequent root note in the sheet
   detectKey(sheetText: string): string | null {
-    const matches = [...sheetText.matchAll(CHORD_REGEX)];
+    const matches: RegExpExecArray[] = [...sheetText.matchAll(CHORD_REGEX)];
     if (matches.length === 0) return null;
 
     const freq: Record<string, number> = {};
     for (const [match] of matches) {
-      const root = match.match(/^[A-G][#b]?/)?.[0];
+      const root: string | undefined = match.match(/^[A-G][#b]?/)?.[0];
       if (root) freq[root] = (freq[root] ?? 0) + 1;
     }
 
