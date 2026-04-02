@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use './abstracts/variables' as *;
 @use './base/globals';
 
@@ -49,7 +50,9 @@
     color: $text-secondary;
     padding: 4px 8px;
     border-radius: $radius-sm;
-    transition: background 0.1s, color 0.1s;
+    transition:
+      background 0.1s,
+      color 0.1s;
 
     &:hover {
       background: $bg-elevated;
@@ -88,11 +91,18 @@
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: $radius-sm;
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
   height: 32px;
 
-  &:hover:not(:disabled) { background: $accent-hover; }
-  &:disabled { opacity: 0.45; cursor: not-allowed; }
+  &:hover:not(:disabled) {
+    background: $accent-hover;
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 
 .btn-ghost {
@@ -107,9 +117,14 @@
   border: 1px solid $border;
   border-radius: $radius-sm;
   height: 32px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
-  &:hover { background: $bg-elevated; color: $text-primary; }
+  &:hover {
+    background: $bg-elevated;
+    color: $text-primary;
+  }
 }
 
 .btn-link {
@@ -119,7 +134,10 @@
   padding: 0;
   text-decoration: none;
 
-  &:hover { text-decoration: underline; color: lighten($accent, 10%); }
+  &:hover {
+    text-decoration: underline;
+    color: color.adjust($accent, $lightness: 10%);
+  }
 }
 
 // ─── Page titles ────────────────────────────────────────────────────────────
@@ -154,7 +172,9 @@
   color: $text-muted;
   font-size: 0.9rem;
 
-  &--error { color: $red; }
+  &--error {
+    color: $red;
+  }
 }
 
 .list-empty {
@@ -203,7 +223,9 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  transition: border-color 0.1s, background 0.1s;
+  transition:
+    border-color 0.1s,
+    background 0.1s;
 
   &:hover {
     border-color: $border;
@@ -267,7 +289,9 @@
     color: $text-muted;
     padding: 2px 6px;
     border-radius: $radius-sm;
-    transition: background 0.1s, color 0.1s;
+    transition:
+      background 0.1s,
+      color 0.1s;
 
     &:hover {
       background: rgba($red, 0.15);
@@ -347,7 +371,9 @@
   font-size: 0.82rem;
   font-weight: 500;
   color: $text-secondary;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 
   &.active {
     background: $accent;
@@ -376,9 +402,14 @@
   justify-content: center;
   font-size: 1rem;
   color: $text-secondary;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 
-  &:hover { background: $bg-elevated; color: $text-primary; }
+  &:hover {
+    background: $bg-elevated;
+    color: $text-primary;
+  }
 }
 
 .step-value {
@@ -409,10 +440,10 @@
 .sheet-textarea {
   width: 100%;
   min-height: 500px;
-  background: $bg-surface;
+  background: #ffffff;
   border: 1px solid $border-subtle;
   border-radius: $radius-lg;
-  color: $text-chord;
+  color: #1e1f22;
   font-family: $font-mono;
   font-size: 0.875rem;
   line-height: 1.9;
@@ -485,7 +516,9 @@
       border-color: $border-focus;
     }
 
-    &::placeholder { color: $text-muted; }
+    &::placeholder {
+      color: $text-muted;
+    }
   }
 
   &__actions {
@@ -515,16 +548,16 @@
   cursor: pointer;
   animation: slide-in 0.2s ease;
   max-width: 320px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 
   &--success {
-    background: darken($green, 50%);
+    background: color.adjust($green, $lightness: -50%);
     border: 1px solid rgba($green, 0.5);
     color: $green;
   }
 
   &--error {
-    background: darken($red, 30%);
+    background: color.adjust($red, $lightness: -30%);
     border: 1px solid rgba($red, 0.5);
     color: #ffb3b3;
   }
@@ -533,26 +566,37 @@
 // ─── Animations ─────────────────────────────────────────────────────────────
 
 @keyframes slide-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 // ─── Additions & Overrides ───────────────────────────────────────────────────
-
-// White text in chord textarea
-.sheet-textarea {
-  color: #ffffff;
-}
 
 // Danger button (for delete confirm)
 .btn-danger {
@@ -568,7 +612,9 @@
   height: 32px;
   transition: background 0.15s;
 
-  &:hover { background: darken($red, 8%); }
+  &:hover {
+    background: color.adjust($red, $lightness: -8%);
+  }
 }
 
 // Name input + key select in controls bar
@@ -588,9 +634,13 @@
     border-color: $border-focus;
   }
 
-  &::placeholder { color: $text-muted; }
+  &::placeholder {
+    color: $text-muted;
+  }
 
-  option { background: $bg-surface; }
+  option {
+    background: $bg-surface;
+  }
 }
 
 .control-select {

@@ -5,6 +5,7 @@ export interface TransposeRequest {
   semitones?: number;
   strategy?: 'semitone' | 'capo';
   capoFret?: number;
+  useFlats?: boolean;
 }
 
 export interface TransposeResponse {

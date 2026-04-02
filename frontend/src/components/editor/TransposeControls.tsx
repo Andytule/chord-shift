@@ -4,46 +4,34 @@ const KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#',
 
 interface Props {
   semitones: number;
-  strategy: 'semitone' | 'capo';
-  capoFret: number;
   selectedKey: string | null;
   sheetName: string;
+  useFlats: boolean;
   onSemitonesChange: (v: number) => void;
-  onStrategyChange: (v: 'semitone' | 'capo') => void;
-  onCapoFretChange: (v: number) => void;
-  onTransposeImmediate: (semitones: number, strategy: 'semitone' | 'capo', capoFret: number) => void;
+  onTransposeImmediate: (delta: number) => void;
   onKeyChange: (key: string | null) => void;
   onNameChange: (name: string) => void;
+  onUseFlatsChange: (v: boolean) => void;
   onReset: () => void;
   loading: boolean;
 }
 
 const TransposeControls: React.FC<Props> = ({
   semitones,
-  strategy,
-  capoFret,
   selectedKey,
   sheetName,
+  useFlats,
   onSemitonesChange,
-  onStrategyChange,
-  onCapoFretChange,
   onTransposeImmediate,
   onKeyChange,
   onNameChange,
+  onUseFlatsChange,
   onReset,
   loading,
 }) => {
-  const handleSemitoneStep = (delta: number) => {
-    const next = semitones + delta;
-    onSemitonesChange(next);
-    onTransposeImmediate(delta, 'semitone', capoFret);
-  };
-
-  const handleCapoStep = (delta: number) => {
-    const next = Math.max(0, capoFret + delta);
-    if (next === capoFret) return;
-    onCapoFretChange(next);
-    onTransposeImmediate(semitones, 'capo', next);
+  const handleStep = (delta: number) => {
+    onSemitonesChange(semitones + delta);
+    onTransposeImmediate(delta);
   };
 
   return (
@@ -75,45 +63,30 @@ const TransposeControls: React.FC<Props> = ({
         </select>
       </div>
 
-      {/* Mode toggle */}
+      {/* Semitone stepper */}
       <div className="control-group">
-        <label className="control-label">Mode</label>
-        <div className="toggle-group">
-          <button
-            className={`toggle-btn ${strategy === 'semitone' ? 'active' : ''}`}
-            onClick={() => onStrategyChange('semitone')}
-          >
-            Semitone
-          </button>
-          <button
-            className={`toggle-btn ${strategy === 'capo' ? 'active' : ''}`}
-            onClick={() => onStrategyChange('capo')}
-          >
-            Capo
-          </button>
+        <label className="control-label">Transpose</label>
+        <div className="stepper">
+          <button className="step-btn" onClick={() => handleStep(-1)} disabled={loading}>−</button>
+          <span className="step-value">{semitones > 0 ? `+${semitones}` : semitones}</span>
+          <button className="step-btn" onClick={() => handleStep(1)} disabled={loading}>+</button>
         </div>
       </div>
 
-      {/* Stepper */}
-      {strategy === 'semitone' ? (
-        <div className="control-group">
-          <label className="control-label">Semitones</label>
-          <div className="stepper">
-            <button className="step-btn" onClick={() => handleSemitoneStep(-1)} disabled={loading}>−</button>
-            <span className="step-value">{semitones > 0 ? `+${semitones}` : semitones}</span>
-            <button className="step-btn" onClick={() => handleSemitoneStep(1)} disabled={loading}>+</button>
-          </div>
+      {/* Sharps / Flats toggle */}
+      <div className="control-group">
+        <label className="control-label">Notation</label>
+        <div className="toggle-group">
+          <button
+            className={`toggle-btn ${!useFlats ? 'active' : ''}`}
+            onClick={() => onUseFlatsChange(false)}
+          >♯ Sharps</button>
+          <button
+            className={`toggle-btn ${useFlats ? 'active' : ''}`}
+            onClick={() => onUseFlatsChange(true)}
+          >♭ Flats</button>
         </div>
-      ) : (
-        <div className="control-group">
-          <label className="control-label">Capo Fret</label>
-          <div className="stepper">
-            <button className="step-btn" onClick={() => handleCapoStep(-1)} disabled={loading}>−</button>
-            <span className="step-value">{capoFret}</span>
-            <button className="step-btn" onClick={() => handleCapoStep(1)} disabled={loading}>+</button>
-          </div>
-        </div>
-      )}
+      </div>
 
       <div className="control-actions">
         <button className="btn-ghost" onClick={onReset}>Reset</button>

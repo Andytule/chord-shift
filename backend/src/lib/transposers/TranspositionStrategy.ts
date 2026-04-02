@@ -4,5 +4,5 @@
 // modifying any existing code.
 
 export interface TranspositionStrategy {
-  transpose(chordName: string, amount: number): string;
+  transpose(chordName: string, amount: number, useFlats?: boolean): string;
 }

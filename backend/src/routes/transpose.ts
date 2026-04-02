@@ -25,7 +25,7 @@ const router: Router = Router();
 
 router.post('/', (req, res) => {
   try {
-    const { sheetText, semitones, strategy = 'semitone', capoFret } = req.body;
+    const { sheetText, semitones, strategy = 'semitone', capoFret, useFlats } = req.body;
 
     if (typeof sheetText !== 'string' || sheetText.trim() === '') {
       res.status(400).json({ error: 'sheetText is required' });
@@ -44,7 +44,8 @@ router.post('/', (req, res) => {
     const service: ChordTransformationService = new ChordTransformationService(
       strategy as StrategyType
     );
-    const result: TransformResult = service.transform(sheetText, amount);
+    const flatOverride: boolean | undefined = typeof useFlats === 'boolean' ? useFlats : undefined;
+    const result: TransformResult = service.transform(sheetText, amount, flatOverride);
     const detectedKey: string | null = service.detectKey(result.transposedText);
 
     res.json({ ...result, detectedKey });

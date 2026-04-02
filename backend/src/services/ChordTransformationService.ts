@@ -5,17 +5,19 @@
 
 import { Chord } from '../lib/chord/Chord';
 import { ChordProgression } from '../lib/chord/ChordProgression';
+import { destinationUsesFlats } from '../lib/transposers/SemitoneTransposer';
 import type { TranspositionStrategy } from '../lib/transposers/TranspositionStrategy';
 import { type StrategyType, TransformationFactory } from './TransformationFactory';
 
 // Matches chord tokens: root note + optional sharp/flat + optional quality suffix
-// Handles: Am, C#m7, Gsus4, Bb/F, Fmaj7, Ddim, Baug, etc.
+// Covers: Am, C#m7, Gsus4, Bb/F, Fmaj7, Ddim, Baug, G2, Ab2, Bb2, A/C#, etc.
+// Uses lookahead/lookbehind instead of \b so that sharps (#) are included in the token.
 const CHORD_REGEX: RegExp =
-  /\b([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G][#b]?)?)\b/g;
+  /(?<![A-Za-z])([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G][#b]?)?)(?![A-Za-z#b])/g;
 
-// Common English words that match the chord regex but are not chords
+// Common English words that match the chord regex but are not chords.
+// NOTE: Do NOT add 'A' here — it is a valid note name that must be transposed.
 const EXCLUDED_WORDS: Set<string> = new Set([
-  'A',
   'Be',
   'Add',
   'Age',
@@ -53,9 +55,24 @@ export class ChordTransformationService {
     this.strategy = TransformationFactory.createStrategy(strategyType);
   }
 
-  transform(sheetText: string, amount: number): TransformResult {
+  transform(sheetText: string, amount: number, useFlats?: boolean): TransformResult {
     const originalChords: string[] = [];
     const transposedChords: string[] = [];
+
+    // Determine flat/sharp preference once for the whole sheet so every chord
+    // is consistent. Use the caller's explicit override if provided; otherwise
+    // derive from the most frequent root note in the sheet.
+    let preferFlats: boolean;
+    if (useFlats !== undefined) {
+      preferFlats = useFlats;
+    } else {
+      const detectedKey = this.detectKey(sheetText);
+      if (detectedKey) {
+        preferFlats = destinationUsesFlats(detectedKey, amount);
+      } else {
+        preferFlats = false;
+      }
+    }
 
     const transposedText = sheetText
       .split('\n')
@@ -70,7 +87,7 @@ export class ChordTransformationService {
           const chord: Chord = new Chord(match);
           const progression: ChordProgression = new ChordProgression();
           progression.add(chord);
-          progression.transpose(amount);
+          progression.transpose(amount, preferFlats);
 
           const transposed: string = chord.toString();
           originalChords.push(match);

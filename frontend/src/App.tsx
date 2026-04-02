@@ -4,7 +4,6 @@ import type { Sheet } from './api/client';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
 import SheetList from './components/sheets/SheetList';
-import SaveModal from './components/ui/SaveModal';
 import Toast from './components/ui/Toast';
 import type { ToastMessage } from './components/ui/Toast';
 
@@ -29,12 +28,10 @@ const App = (): React.ReactElement => {
   const [sheetText, setSheetText] = useState('');
   const [sheetName, setSheetName] = useState('');
   const [semitones, setSemitones] = useState(0);
-  const [strategy, setStrategy] = useState<'semitone' | 'capo'>('semitone');
-  const [capoFret, setCapoFret] = useState(0);
+  const [useFlats, setUseFlats] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -54,7 +51,7 @@ const App = (): React.ReactElement => {
     setSheetText('');
     setSheetName('');
     setSemitones(0);
-    setCapoFret(0);
+    setUseFlats(false);
     setSelectedKey(null);
     originalTextRef.current = '';
     setView('editor');
@@ -65,25 +62,20 @@ const App = (): React.ReactElement => {
     setSheetName(sheet.name);
     setSelectedKey(sheet.key);
     setSemitones(0);
-    setCapoFret(0);
+    setUseFlats(false);
     originalTextRef.current = sheet.sheet_text;
     setView('editor');
   };
 
-  // Called immediately when +/- is pressed — transposes by the delta only
-  const handleTransposeImmediate = async (
-    delta: number,
-    strat: 'semitone' | 'capo',
-    fret: number
-  ) => {
+  const handleTransposeImmediate = async (delta: number) => {
     if (!sheetText.trim()) return;
     setLoading(true);
     try {
       const result = await transposeSheet({
         sheetText,
-        semitones: strat === 'semitone' ? delta : undefined,
-        strategy: strat,
-        capoFret: strat === 'capo' ? fret : undefined,
+        semitones: delta,
+        strategy: 'semitone',
+        useFlats,
       });
       setSheetText(result.transposedText);
       if (result.detectedKey && !selectedKey) {
@@ -96,22 +88,41 @@ const App = (): React.ReactElement => {
     }
   };
 
+  const handleUseFlatsChange = async (newUseFlats: boolean) => {
+    setUseFlats(newUseFlats);
+    if (!sheetText.trim()) return;
+    setLoading(true);
+    try {
+      // Re-transpose the current text by 0 semitones to rewrite notation only
+      const result = await transposeSheet({
+        sheetText,
+        semitones: 0,
+        strategy: 'semitone',
+        useFlats: newUseFlats,
+      });
+      setSheetText(result.transposedText);
+    } catch (e) {
+      addToast((e as Error).message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setSheetText(originalTextRef.current);
     setSemitones(0);
-    setCapoFret(0);
     setSelectedKey(null);
   };
 
-  const handleSaveConfirm = async (name: string) => {
+  const handleSave = async () => {
     if (!sheetText.trim()) return;
+    const name = sheetName.trim() || 'Untitled sheet';
     setSaving(true);
     try {
       await saveSheet(name, sheetText, selectedKey);
       setSheetName(name);
       addToast('Sheet saved!', 'success');
       setRefreshTrigger((n) => n + 1);
-      setShowSaveModal(false);
     } catch (e) {
       addToast((e as Error).message, 'error');
     } finally {
@@ -126,7 +137,7 @@ const App = (): React.ReactElement => {
           {view === 'editor' && (
             <button className="header__back" onClick={() => setView('list')}>← Back</button>
           )}
-          <div className="header__brand">
+          <div className="header__brand" onClick={() => setView('list')} style={{ cursor: 'pointer' }}>
             <span className="header__logo">♩</span>
             <span className="header__title">ChordShift</span>
           </div>
@@ -137,8 +148,8 @@ const App = (): React.ReactElement => {
               <button className="btn-link" onClick={() => { setSheetText(SAMPLE_SHEET); originalTextRef.current = SAMPLE_SHEET; }}>
                 Load sample
               </button>
-              <button className="btn-primary" onClick={() => setShowSaveModal(true)}>
-                Save Sheet
+              <button className="btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save Sheet'}
               </button>
             </>
           )}
@@ -158,16 +169,14 @@ const App = (): React.ReactElement => {
           <div className="editor-view">
             <TransposeControls
               semitones={semitones}
-              strategy={strategy}
-              capoFret={capoFret}
               selectedKey={selectedKey}
               sheetName={sheetName}
+              useFlats={useFlats}
               onSemitonesChange={setSemitones}
-              onStrategyChange={setStrategy}
-              onCapoFretChange={setCapoFret}
               onTransposeImmediate={handleTransposeImmediate}
               onKeyChange={setSelectedKey}
               onNameChange={setSheetName}
+              onUseFlatsChange={handleUseFlatsChange}
               onReset={handleReset}
               loading={loading}
             />
@@ -179,15 +188,6 @@ const App = (): React.ReactElement => {
           </div>
         )}
       </main>
-
-      {showSaveModal && (
-        <SaveModal
-          defaultName={sheetName}
-          onConfirm={handleSaveConfirm}
-          onCancel={() => setShowSaveModal(false)}
-          saving={saving}
-        />
-      )}
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>

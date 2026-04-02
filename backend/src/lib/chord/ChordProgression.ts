@@ -20,9 +20,9 @@ export class ChordProgression implements ChordComponent {
     return this.children;
   }
 
-  transpose(semitones: number): void {
+  transpose(semitones: number, useFlats?: boolean): void {
     for (const child of this.children) {
-      child.transpose(semitones);
+      child.transpose(semitones, useFlats);
     }
   }
 

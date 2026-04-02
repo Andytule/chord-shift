@@ -18,8 +18,8 @@ export class Chord implements ChordComponent {
     return this.name;
   }
 
-  transpose(semitones: number): void {
-    this.name = transposer.transpose(this.name, semitones);
+  transpose(semitones: number, useFlats?: boolean): void {
+    this.name = transposer.transpose(this.name, semitones, useFlats);
   }
 
   toString(): string {
