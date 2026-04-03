@@ -1,12 +1,18 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { getNextUntitledName, saveSheet, setAuthToken, transposeSheet, updateSheet } from './api/client';
-import type { Sheet } from './api/client';
-import { useAuth } from './context/AuthContext';
+import React, { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import type { Sheet, TransposeResponse } from './api/client';
+import {
+  getNextUntitledName,
+  saveSheet,
+  setAuthToken,
+  transposeSheet,
+  updateSheet,
+} from './api/client';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
 import SheetList from './components/sheets/SheetList';
-import Toast from './components/ui/Toast';
 import type { ToastMessage } from './components/ui/Toast';
+import Toast from './components/ui/Toast';
+import { useAuth } from './context/AuthContext';
 
 type View = 'list' | 'editor';
 
@@ -32,24 +38,24 @@ const App = (): React.ReactElement => {
     setAuthToken(session?.access_token ?? null);
   }, [session]);
   const [view, setView] = useState<View>('list');
-  const [sheetText, setSheetText] = useState('');
-  const [sheetName, setSheetName] = useState('');
+  const [sheetText, setSheetText] = useState<string>('');
+  const [sheetName, setSheetName] = useState<string>('');
   const [currentSheetId, setCurrentSheetId] = useState<number | null>(null);
-  const [semitones, setSemitones] = useState(0);
-  const [useFlats, setUseFlats] = useState(false);
+  const [semitones, setSemitones] = useState<number>(0);
+  const [useFlats, setUseFlats] = useState<boolean>(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   // Track the "original" sheet text so Reset can restore it
-  const originalTextRef = useRef('');
+  const originalTextRef: RefObject<string> = useRef('');
   // Track cumulative semitone offset from original so the counter stays accurate
-  const semitoneOffsetRef = useRef(0);
+  const semitoneOffsetRef: RefObject<number> = useRef(0);
 
   const addToast = useCallback((text: string, type: 'success' | 'error') => {
-    const id = ++toastCounter;
+    const id: number = ++toastCounter;
     setToasts((prev) => [...prev, { id, text, type }]);
   }, []);
 
@@ -58,7 +64,7 @@ const App = (): React.ReactElement => {
   }, []);
 
   const openNewEditor = async () => {
-    const untitledName = await getNextUntitledName();
+    const untitledName: string = await getNextUntitledName();
     setSheetText('');
     setSheetName(untitledName);
     setCurrentSheetId(null);
@@ -86,7 +92,7 @@ const App = (): React.ReactElement => {
     if (!sheetText.trim()) return;
     setLoading(true);
     try {
-      const result = await transposeSheet({
+      const result: TransposeResponse = await transposeSheet({
         sheetText,
         semitones: delta,
         strategy: 'semitone',
@@ -111,7 +117,7 @@ const App = (): React.ReactElement => {
     setLoading(true);
     try {
       // Re-transpose the current text by 0 semitones to rewrite notation only
-      const result = await transposeSheet({
+      const result: TransposeResponse = await transposeSheet({
         sheetText,
         semitones: 0,
         strategy: 'semitone',
@@ -134,7 +140,7 @@ const App = (): React.ReactElement => {
 
   const handleSave = async () => {
     if (!sheetText.trim()) return;
-    const name = sheetName.trim() || 'untitled_chord_sheet_1';
+    const name: string = sheetName.trim() || 'untitled_chord_sheet_1';
     setSaving(true);
     try {
       let saved: Sheet;
@@ -159,9 +165,15 @@ const App = (): React.ReactElement => {
       <header className="header">
         <div className="header__left">
           {view === 'editor' && (
-            <button className="header__back" onClick={() => setView('list')}>← Back</button>
+            <button className="header__back" onClick={() => setView('list')}>
+              ← Back
+            </button>
           )}
-          <div className="header__brand" onClick={() => setView('list')} style={{ cursor: 'pointer' }}>
+          <div
+            className="header__brand"
+            onClick={() => setView('list')}
+            style={{ cursor: 'pointer' }}
+          >
             <span className="header__logo">♩</span>
             <span className="header__title">ChordShift</span>
           </div>
@@ -169,7 +181,15 @@ const App = (): React.ReactElement => {
         <div className="header__right">
           {view === 'editor' && (
             <>
-              <button className="btn-link" onClick={() => { setSheetText(SAMPLE_SHEET); setSemitones(0); semitoneOffsetRef.current = 0; originalTextRef.current = SAMPLE_SHEET; }}>
+              <button
+                className="btn-link"
+                onClick={() => {
+                  setSheetText(SAMPLE_SHEET);
+                  setSemitones(0);
+                  semitoneOffsetRef.current = 0;
+                  originalTextRef.current = SAMPLE_SHEET;
+                }}
+              >
                 Load sample
               </button>
               <button className="btn-primary" onClick={handleSave} disabled={saving}>
@@ -219,7 +239,9 @@ const App = (): React.ReactElement => {
             <ChordSheetEditor
               value={sheetText}
               onChange={setSheetText}
-              placeholder={"Paste your chord sheet here…\n\nChords go on their own line above lyrics:\n\nG         D        Em\nThe sun comes up, it's a new day"}
+              placeholder={
+                "Paste your chord sheet here…\n\nChords go on their own line above lyrics:\n\nG         D        Em\nThe sun comes up, it's a new day"
+              }
             />
           </div>
         )}

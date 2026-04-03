@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { NextFunction, Request, Response } from 'express';
 
 // Extend Express Request so downstream handlers can read req.userId
@@ -10,17 +10,20 @@ declare global {
   }
 }
 
-const supabase = createClient(process.env.SUPABASE_URL ?? '', process.env.SUPABASE_ANON_KEY ?? '');
+const supabase: SupabaseClient = createClient(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_ANON_KEY ?? ''
+);
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const authHeader = req.headers.authorization;
+  const authHeader: string | undefined = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or malformed Authorization header' });
     return;
   }
 
-  const token = authHeader.slice(7);
+  const token: string = authHeader.slice(7);
 
   const { data, error } = await supabase.auth.getUser(token);
 

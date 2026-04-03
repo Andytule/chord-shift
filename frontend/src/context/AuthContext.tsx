@@ -15,17 +15,15 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Hydrate session from storage on mount
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setAuthToken(data.session?.access_token ?? null);
       setLoading(false);
     });
 
-    // Keep session in sync with Supabase auth events
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -59,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
+  const ctx: AuthContextValue | null = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 };

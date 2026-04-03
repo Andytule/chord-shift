@@ -19,9 +19,12 @@ const Toast: React.FC<Props> = ({ toasts, onDismiss }) => (
   </div>
 );
 
-const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: number) => void }> = ({ toast, onDismiss }) => {
+const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: number) => void }> = ({
+  toast,
+  onDismiss,
+}) => {
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 3000);
+    const timer: number = setTimeout(() => onDismiss(toast.id), 3000);
     return () => clearTimeout(timer);
   }, [toast.id, onDismiss]);
 

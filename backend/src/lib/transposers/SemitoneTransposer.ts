@@ -9,7 +9,7 @@ const SHARPS: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 
 const FLATS: string[] = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
 // Root note indices (0-11) that conventionally use flat notation as a destination key
-const FLAT_KEY_INDICES = new Set([
+const FLAT_KEY_INDICES: Set<number> = new Set([
   5, // F
   10, // Bb
   3, // Eb
@@ -23,10 +23,10 @@ const FLAT_KEY_INDICES = new Set([
  * Called once per sheet so all chords are consistent.
  */
 export function destinationUsesFlats(sourceRoot: string, semitones: number): boolean {
-  let index = SHARPS.indexOf(sourceRoot);
+  let index: number = SHARPS.indexOf(sourceRoot);
   if (index === -1) index = FLATS.indexOf(sourceRoot);
   if (index === -1) return false;
-  const newIndex = (((index + semitones) % 12) + 12) % 12;
+  const newIndex: number = (((index + semitones) % 12) + 12) % 12;
   return FLAT_KEY_INDICES.has(newIndex);
 }
 

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Router } from 'express';
 
 import type { Database } from '../../../types/supabase';
@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
-const supabase = createClient<Database>(
+const supabase: SupabaseClient = createClient<Database>(
   process.env.SUPABASE_URL ?? '',
   process.env.SUPABASE_ANON_KEY ?? ''
 );

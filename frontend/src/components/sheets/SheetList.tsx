@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { deleteSheet, getSheets } from '../../api/client';
 import type { Sheet } from '../../api/client';
+import { deleteSheet, getSheets } from '../../api/client';
 import ConfirmModal from '../ui/ConfirmModal';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 
 const SheetList: React.FC<Props> = ({ onOpen, onCreate, refreshTrigger }) => {
   const [sheets, setSheets] = useState<Sheet[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
@@ -48,7 +48,9 @@ const SheetList: React.FC<Props> = ({ onOpen, onCreate, refreshTrigger }) => {
           <h1 className="page-title">My Sheets</h1>
           <p className="page-subtitle">Your saved chord sheets</p>
         </div>
-        <button className="btn-primary" onClick={onCreate}>+ New Sheet</button>
+        <button className="btn-primary" onClick={onCreate}>
+          + New Sheet
+        </button>
       </div>
 
       {loading && <div className="list-state">Loading…</div>}
@@ -59,20 +61,24 @@ const SheetList: React.FC<Props> = ({ onOpen, onCreate, refreshTrigger }) => {
           <div className="list-empty__icon">♪</div>
           <p className="list-empty__text">No sheets yet</p>
           <p className="list-empty__sub">Create your first chord sheet to get started</p>
-          <button className="btn-primary" onClick={onCreate}>+ New Sheet</button>
+          <button className="btn-primary" onClick={onCreate}>
+            + New Sheet
+          </button>
         </div>
       )}
 
       {!loading && sheets.length > 0 && (
         <div className="sheet-grid">
           {sheets.map((sheet) => {
-            const preview = sheet.sheet_text
+            const preview: string = sheet.sheet_text
               .split('\n')
               .filter((l) => l.trim() && !l.startsWith('['))
               .slice(0, 2)
               .join('  ·  ');
-            const date = new Date(sheet.created_at ?? '').toLocaleDateString(undefined, {
-              month: 'short', day: 'numeric', year: 'numeric',
+            const date: string = new Date(sheet.created_at ?? '').toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
             });
             return (
               <div key={sheet.id} className="sheet-card" onClick={() => onOpen(sheet)}>
