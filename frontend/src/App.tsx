@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { saveSheet, transposeSheet } from './api/client';
+import { getNextUntitledName, saveSheet, transposeSheet, updateSheet } from './api/client';
 import type { Sheet } from './api/client';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
@@ -27,6 +27,7 @@ const App = (): React.ReactElement => {
   const [view, setView] = useState<View>('list');
   const [sheetText, setSheetText] = useState('');
   const [sheetName, setSheetName] = useState('');
+  const [currentSheetId, setCurrentSheetId] = useState<number | null>(null);
   const [semitones, setSemitones] = useState(0);
   const [useFlats, setUseFlats] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -47,9 +48,11 @@ const App = (): React.ReactElement => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const openNewEditor = () => {
+  const openNewEditor = async () => {
+    const untitledName = await getNextUntitledName();
     setSheetText('');
-    setSheetName('');
+    setSheetName(untitledName);
+    setCurrentSheetId(null);
     setSemitones(0);
     setUseFlats(false);
     setSelectedKey(null);
@@ -60,6 +63,7 @@ const App = (): React.ReactElement => {
   const openExistingSheet = (sheet: Sheet) => {
     setSheetText(sheet.sheet_text);
     setSheetName(sheet.name);
+    setCurrentSheetId(sheet.id);
     setSelectedKey(sheet.key);
     setSemitones(0);
     setUseFlats(false);
@@ -116,11 +120,17 @@ const App = (): React.ReactElement => {
 
   const handleSave = async () => {
     if (!sheetText.trim()) return;
-    const name = sheetName.trim() || 'Untitled sheet';
+    const name = sheetName.trim() || 'untitled_chord_sheet_1';
     setSaving(true);
     try {
-      await saveSheet(name, sheetText, selectedKey);
-      setSheetName(name);
+      let saved: Sheet;
+      if (currentSheetId !== null) {
+        saved = await updateSheet(currentSheetId, name, sheetText, selectedKey);
+      } else {
+        saved = await saveSheet(name, sheetText, selectedKey);
+        setCurrentSheetId(saved.id);
+      }
+      setSheetName(saved.name);
       addToast('Sheet saved!', 'success');
       setRefreshTrigger((n) => n + 1);
     } catch (e) {
