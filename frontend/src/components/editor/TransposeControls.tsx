@@ -7,7 +7,6 @@ interface Props {
   selectedKey: string | null;
   sheetName: string;
   useFlats: boolean;
-  onSemitonesChange: (v: number) => void;
   onTransposeImmediate: (delta: number) => void;
   onKeyChange: (key: string | null) => void;
   onNameChange: (name: string) => void;
@@ -21,7 +20,6 @@ const TransposeControls: React.FC<Props> = ({
   selectedKey,
   sheetName,
   useFlats,
-  onSemitonesChange,
   onTransposeImmediate,
   onKeyChange,
   onNameChange,
@@ -30,7 +28,6 @@ const TransposeControls: React.FC<Props> = ({
   loading,
 }) => {
   const handleStep = (delta: number) => {
-    onSemitonesChange(semitones + delta);
     onTransposeImmediate(delta);
   };
 

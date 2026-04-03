@@ -38,6 +38,8 @@ const App = (): React.ReactElement => {
 
   // Track the "original" sheet text so Reset can restore it
   const originalTextRef = useRef('');
+  // Track cumulative semitone offset from original so the counter stays accurate
+  const semitoneOffsetRef = useRef(0);
 
   const addToast = useCallback((text: string, type: 'success' | 'error') => {
     const id = ++toastCounter;
@@ -57,6 +59,7 @@ const App = (): React.ReactElement => {
     setUseFlats(false);
     setSelectedKey(null);
     originalTextRef.current = '';
+    semitoneOffsetRef.current = 0;
     setView('editor');
   };
 
@@ -68,6 +71,7 @@ const App = (): React.ReactElement => {
     setSemitones(0);
     setUseFlats(false);
     originalTextRef.current = sheet.sheet_text;
+    semitoneOffsetRef.current = 0;
     setView('editor');
   };
 
@@ -82,6 +86,8 @@ const App = (): React.ReactElement => {
         useFlats,
       });
       setSheetText(result.transposedText);
+      semitoneOffsetRef.current += delta;
+      setSemitones(semitoneOffsetRef.current);
       if (result.detectedKey && !selectedKey) {
         setSelectedKey(result.detectedKey);
       }
@@ -115,6 +121,7 @@ const App = (): React.ReactElement => {
   const handleReset = () => {
     setSheetText(originalTextRef.current);
     setSemitones(0);
+    semitoneOffsetRef.current = 0;
     setSelectedKey(null);
   };
 
@@ -155,7 +162,7 @@ const App = (): React.ReactElement => {
         <div className="header__right">
           {view === 'editor' && (
             <>
-              <button className="btn-link" onClick={() => { setSheetText(SAMPLE_SHEET); originalTextRef.current = SAMPLE_SHEET; }}>
+              <button className="btn-link" onClick={() => { setSheetText(SAMPLE_SHEET); setSemitones(0); semitoneOffsetRef.current = 0; originalTextRef.current = SAMPLE_SHEET; }}>
                 Load sample
               </button>
               <button className="btn-primary" onClick={handleSave} disabled={saving}>
@@ -182,7 +189,6 @@ const App = (): React.ReactElement => {
               selectedKey={selectedKey}
               sheetName={sheetName}
               useFlats={useFlats}
-              onSemitonesChange={setSemitones}
               onTransposeImmediate={handleTransposeImmediate}
               onKeyChange={setSelectedKey}
               onNameChange={setSheetName}
