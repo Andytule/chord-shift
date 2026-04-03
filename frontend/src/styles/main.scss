@@ -661,3 +661,145 @@
   margin-right: $spacing-sm;
   font-size: 0.875rem;
 }
+
+// ─── Auth Loading Spinner ────────────────────────────────────────────────────
+
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-base;
+
+  &__logo {
+    font-size: 2.5rem;
+    color: $accent;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+// ─── Login Page ──────────────────────────────────────────────────────────────
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-base;
+  padding: $spacing-md;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: $bg-surface;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__logo {
+    font-size: 1.75rem;
+    color: $accent;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text-primary;
+    letter-spacing: -0.01em;
+  }
+
+  &__heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 $spacing-xs;
+  }
+
+  &__sub {
+    font-size: 0.9375rem;
+    color: $text-secondary;
+    margin: 0 0 $spacing-lg;
+  }
+
+  &__footer {
+    font-size: 0.8125rem;
+    color: $text-muted;
+    margin: $spacing-md 0 0;
+  }
+}
+
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 20px;
+  background: #fff;
+  color: #3c4043;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  border: 1px solid #dadce0;
+  transition: background 0.15s, box-shadow 0.15s;
+  font-family: $font-ui;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+// ─── Header user area ────────────────────────────────────────────────────────
+
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-left: $spacing-sm;
+  padding-left: $spacing-sm;
+  border-left: 1px solid $border-subtle;
+}
+
+.header__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.header__signout {
+  font-size: 0.8125rem;
+  color: $text-muted;
+  padding: 4px 8px;
+
+  &:hover {
+    color: $text-secondary;
+    background: $bg-elevated;
+    border-radius: $radius-sm;
+  }
+}

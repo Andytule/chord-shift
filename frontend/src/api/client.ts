@@ -1,5 +1,20 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
 
+// Auth token is set once after sign-in and cleared on sign-out.
+// All API calls include it so the backend can identify the user.
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  _authToken = token;
+}
+
+function authHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'application/json',
+    ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
+  };
+}
+
 export interface TransposeRequest {
   sheetText: string;
   semitones?: number;
@@ -27,7 +42,7 @@ export interface Sheet {
 export async function transposeSheet(req: TransposeRequest): Promise<TransposeResponse> {
   const res = await fetch(`${BASE_URL}/transpose`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(req),
   });
   if (!res.ok) {
@@ -38,7 +53,7 @@ export async function transposeSheet(req: TransposeRequest): Promise<TransposeRe
 }
 
 export async function getSheets(): Promise<Sheet[]> {
-  const res = await fetch(`${BASE_URL}/sheets`);
+  const res = await fetch(`${BASE_URL}/sheets`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Failed to fetch sheets');
   const data = await res.json();
   return data.sheets;
@@ -47,7 +62,7 @@ export async function getSheets(): Promise<Sheet[]> {
 export async function saveSheet(name: string, sheetText: string, key?: string | null): Promise<Sheet> {
   const res = await fetch(`${BASE_URL}/sheets`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ name, sheet_text: sheetText, key }),
   });
   if (!res.ok) {
@@ -61,7 +76,7 @@ export async function saveSheet(name: string, sheetText: string, key?: string | 
 export async function updateSheet(id: number, name: string, sheetText: string, key?: string | null): Promise<Sheet> {
   const res = await fetch(`${BASE_URL}/sheets/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ name, sheet_text: sheetText, key }),
   });
   if (!res.ok) {
@@ -87,6 +102,6 @@ export async function getNextUntitledName(): Promise<string> {
 }
 
 export async function deleteSheet(id: number): Promise<void> {
-  const res = await fetch(`${BASE_URL}/sheets/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${BASE_URL}/sheets/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) throw new Error('Delete failed');
 }

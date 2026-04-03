@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Router } from 'express';
 
 import type { Database } from '../../../types/supabase';
+import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
@@ -10,13 +11,17 @@ const supabase = createClient<Database>(
   process.env.SUPABASE_ANON_KEY ?? ''
 );
 
+// All sheets routes require a valid Supabase JWT
+router.use(requireAuth);
+
 // GET /sheets
-// Returns the 20 most recently saved chord sheets.
+// Returns the 20 most recently saved sheets belonging to the authenticated user.
 router.get('/', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('chord_sheets')
       .select('*')
+      .eq('user_id', req.userId)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -35,6 +40,7 @@ router.get('/:id', async (req, res) => {
       .from('chord_sheets')
       .select('*')
       .eq('id', Number(req.params.id))
+      .eq('user_id', req.userId)
       .single();
 
     if (error) throw error;
@@ -50,7 +56,6 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /sheets
-// Saves a new chord sheet.
 // Body: { name: string, sheet_text: string, key?: string }
 router.post('/', async (req, res) => {
   try {
@@ -67,7 +72,7 @@ router.post('/', async (req, res) => {
 
     const { data, error } = await supabase
       .from('chord_sheets')
-      .insert({ name, sheet_text, key: key ?? null })
+      .insert({ name, sheet_text, key: key ?? null, user_id: req.userId })
       .select()
       .single();
 
@@ -80,7 +85,6 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /sheets/:id
-// Overwrites an existing sheet with transposed content and updated key.
 // Body: { name?: string, sheet_text: string, key?: string }
 router.put('/:id', async (req, res) => {
   try {
@@ -100,6 +104,7 @@ router.put('/:id', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', Number(req.params.id))
+      .eq('user_id', req.userId)
       .select()
       .single();
 
@@ -118,7 +123,11 @@ router.put('/:id', async (req, res) => {
 // DELETE /sheets/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('chord_sheets').delete().eq('id', Number(req.params.id));
+    const { error } = await supabase
+      .from('chord_sheets')
+      .delete()
+      .eq('id', Number(req.params.id))
+      .eq('user_id', req.userId);
 
     if (error) throw error;
 

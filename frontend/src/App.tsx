@@ -1,6 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { getNextUntitledName, saveSheet, transposeSheet, updateSheet } from './api/client';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { getNextUntitledName, saveSheet, setAuthToken, transposeSheet, updateSheet } from './api/client';
 import type { Sheet } from './api/client';
+import { useAuth } from './context/AuthContext';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
 import SheetList from './components/sheets/SheetList';
@@ -24,6 +25,12 @@ And whatever lies before me`;
 let toastCounter = 0;
 
 const App = (): React.ReactElement => {
+  const { user, session, signOut } = useAuth();
+
+  // Keep the API client's auth token in sync with the Supabase session
+  useEffect(() => {
+    setAuthToken(session?.access_token ?? null);
+  }, [session]);
   const [view, setView] = useState<View>('list');
   const [sheetText, setSheetText] = useState('');
   const [sheetName, setSheetName] = useState('');
@@ -170,6 +177,19 @@ const App = (): React.ReactElement => {
               </button>
             </>
           )}
+          <div className="header__user">
+            {user?.user_metadata?.avatar_url && (
+              <img
+                className="header__avatar"
+                src={user.user_metadata.avatar_url}
+                alt={user.user_metadata.full_name ?? 'User avatar'}
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <button className="btn-ghost header__signout" onClick={signOut} title="Sign out">
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
