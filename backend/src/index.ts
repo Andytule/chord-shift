@@ -9,7 +9,11 @@ import transposeRouter from './routes/transpose';
 const app = express();
 const port = process.env.PORT || 5001;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ['https://andytule.github.io', 'http://localhost:5173'],
+  })
+);
 app.use(express.json());
 
 app.get('/', (req, res) => {
