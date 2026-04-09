@@ -50,3 +50,6 @@ backend/dist/
 # Optional: ignore frontend build
 frontend/dist/
 frontend/build/
+
+# Local notes
+README.local.md
