@@ -1,22 +1,10 @@
-// Orchestrates chord transformation across a full chord sheet.
-// Parses free-form text (mixed lyrics + chords), builds a ChordProgression,
-// applies the chosen strategy, then reconstructs the text with transposed
-// chords in place — leaving lyrics and formatting untouched.
-
-import { Chord } from '../lib/chord/Chord';
-import { ChordProgression } from '../lib/chord/ChordProgression';
 import { destinationUsesFlats } from '../lib/transposers/SemitoneTransposer';
 import type { TranspositionStrategy } from '../lib/transposers/TranspositionStrategy';
 import { type StrategyType, TransformationFactory } from './TransformationFactory';
 
-// Matches chord tokens: root note + optional sharp/flat + optional quality suffix
-// Covers: Am, C#m7, Gsus4, Bb/F, Fmaj7, Ddim, Baug, G2, Ab2, Bb2, A/C#, etc.
-// Uses lookahead/lookbehind instead of \b so that sharps (#) are included in the token.
 const CHORD_REGEX: RegExp =
-  /(?<![A-Za-z])([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G][#b]?)?)(?![A-Za-z#b])/g;
+  /(?<![A-Za-z])([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:[b#]\d+)*(?:\/[A-G][#b]?)?)(?![A-Za-z])/g;
 
-// Common English words that match the chord regex but are not chords.
-// NOTE: Do NOT add 'A' here — it is a valid note name that must be transposed.
 const EXCLUDED_WORDS: Set<string> = new Set([
   'Be',
   'Add',
@@ -29,8 +17,6 @@ const EXCLUDED_WORDS: Set<string> = new Set([
   'Fad',
 ]);
 
-// A line is treated as a chord line if at least half its tokens start with a note name.
-// This prevents transposing words inside lyric lines.
 function isChordLine(line: string): boolean {
   const tokens: string[] = line.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return false;
@@ -46,12 +32,15 @@ export interface TransformResult {
 
 export class ChordTransformationService {
   private strategy: TranspositionStrategy;
+  private strategyType: StrategyType;
 
   constructor(strategyType: StrategyType = 'semitone') {
+    this.strategyType = strategyType;
     this.strategy = TransformationFactory.createStrategy(strategyType);
   }
 
   setStrategy(strategyType: StrategyType): void {
+    this.strategyType = strategyType;
     this.strategy = TransformationFactory.createStrategy(strategyType);
   }
 
@@ -59,16 +48,15 @@ export class ChordTransformationService {
     const originalChords: string[] = [];
     const transposedChords: string[] = [];
 
-    // Determine flat/sharp preference once for the whole sheet so every chord
-    // is consistent. Use the caller's explicit override if provided; otherwise
-    // derive from the most frequent root note in the sheet.
+    const effectiveSemitones: number = this.strategyType === 'capo' ? -amount : amount;
+
     let preferFlats: boolean;
     if (useFlats !== undefined) {
       preferFlats = useFlats;
     } else {
       const detectedKey = this.detectKey(sheetText);
       if (detectedKey) {
-        preferFlats = destinationUsesFlats(detectedKey, amount);
+        preferFlats = destinationUsesFlats(detectedKey, effectiveSemitones);
       } else {
         preferFlats = false;
       }
@@ -81,15 +69,8 @@ export class ChordTransformationService {
 
         return line.replace(CHORD_REGEX, (match) => {
           if (EXCLUDED_WORDS.has(match)) return match;
+          const transposed: string = this.strategy.transpose(match, amount, preferFlats);
 
-          // Build a Chord leaf and wrap in a ChordProgression composite,
-          // then delegate transposition uniformly via the composite interface
-          const chord: Chord = new Chord(match);
-          const progression: ChordProgression = new ChordProgression();
-          progression.add(chord);
-          progression.transpose(amount, preferFlats);
-
-          const transposed: string = chord.toString();
           originalChords.push(match);
           transposedChords.push(transposed);
 
@@ -101,7 +82,6 @@ export class ChordTransformationService {
     return { transposedText, originalChords, transposedChords };
   }
 
-  // Detects the likely key by finding the most frequent root note in the sheet
   detectKey(sheetText: string): string | null {
     const matches: RegExpExecArray[] = [...sheetText.matchAll(CHORD_REGEX)];
     if (matches.length === 0) return null;

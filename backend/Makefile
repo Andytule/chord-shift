@@ -3,3 +3,6 @@
 format-code:
 	npm run format
 	npm run lint:fix
+
+run-tests:
+	npm test

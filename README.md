@@ -51,6 +51,11 @@ chord-shift/
 │   │   ├── routes/
 │   │   │   ├── transpose.ts  # POST /transpose — stateless chord transformation
 │   │   │   └── sheets.ts     # CRUD /sheets — all routes require JWT
+│   │   ├── __tests__/
+│   │   │   ├── SemitoneTransposer.test.ts
+│   │   │   ├── CapoTransposer.test.ts
+│   │   │   ├── ChordTransformationService.test.ts
+│   │   │   └── api.test.ts
 │   │   ├── middleware/
 │   │   │   └── requireAuth.ts  # Validates Supabase Bearer JWT, sets req.userId
 │   │   ├── services/
@@ -185,7 +190,7 @@ All `/sheets` routes require `Authorization: Bearer <supabase_jwt>`.
 
 ### Sharp / Flat Logic
 
-The app decides once per sheet whether to use sharp or flat notation, keeping all chords consistent. The destination key index is checked against a set of conventionally flat keys (`F, Bb, Eb, Ab, Db, Gb`). The user can override this with the `useFlats` toggle.
+The app decides once per sheet whether to use sharp or flat notation, keeping all chords consistent. Unambiguously flat destinations (F, Bb, Eb, Ab) always use flats. For the two enharmonic ambiguities — Db/C# and Gb/F# — the notation is inherited from the source key: a sharp-flavoured source (e.g. E, B, A) landing on index 6 produces F#, while a flat-flavoured source (e.g. Gb, Db) produces Gb. The user can override everything with the `useFlats` toggle.
 
 ### Auth Flow
 
@@ -215,17 +220,43 @@ CORS is currently allowed for `https://andytule.github.io` and `http://localhost
 
 ---
 
+## Testing
+
+The backend has a full Jest test suite covering unit and integration tests.
+
+```bash
+cd backend
+npm test                  # run all tests
+npm run test:watch        # re-run on file save
+npm run test:coverage     # run with coverage report
+make run-tests            # via Makefile
+```
+
+| File                                 | What it covers                                                                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `SemitoneTransposer.test.ts`         | Chromatic scale, sharp/flat output, chord quality suffixes, altered extensions (m7b5, maj7#11, 7b9), slash chords                 |
+| `CapoTransposer.test.ts`             | Transposition direction, quality preservation, common guitar keys                                                                 |
+| `ChordTransformationService.test.ts` | Chord line detection, progressions, altered chords, flat/sharp preference, `detectKey`, excluded words, formatting, capo strategy |
+| `api.test.ts`                        | Every endpoint — happy paths, validation errors, Supabase error propagation                                                       |
+
+Supabase is mocked via a thenable chain so tests run without a live database. `requireAuth` is mocked to inject a fixed `userId`.
+
+---
+
 ## NPM Scripts
 
 ### Backend
 
-| Script           | Description                             |
-| ---------------- | --------------------------------------- |
-| `npm run dev`    | Start dev server with nodemon + ts-node |
-| `npm run build`  | Compile TypeScript to `dist/`           |
-| `npm run start`  | Run compiled output                     |
-| `npm run lint`   | ESLint                                  |
-| `npm run format` | Prettier                                |
+| Script                  | Description                             |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Start dev server with nodemon + ts-node |
+| `npm run build`         | Compile TypeScript to `dist/`           |
+| `npm run start`         | Run compiled output                     |
+| `npm run lint`          | ESLint                                  |
+| `npm run format`        | Prettier                                |
+| `npm test`              | Run all tests                           |
+| `npm run test:watch`    | Re-run tests on file save               |
+| `npm run test:coverage` | Run tests with coverage report          |
 
 ### Frontend
 
