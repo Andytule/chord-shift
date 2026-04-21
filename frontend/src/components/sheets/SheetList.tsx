@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import type { Sheet } from '../../api/client';
-import { deleteSheet, getSheets } from '../../api/client';
+
+import { deleteSheet, getSheets, type Sheet } from '../../api/client';
 import ConfirmModal from '../ui/ConfirmModal';
 
 interface Props {

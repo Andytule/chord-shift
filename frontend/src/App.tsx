@@ -1,18 +1,19 @@
-import React, { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { Sheet, TransposeResponse } from './api/client';
+import React, { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+
 import {
   getNextUntitledName,
   saveSheet,
   setAuthToken,
+  type Sheet,
+  type TransposeResponse,
   transposeSheet,
   updateSheet,
 } from './api/client';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
 import SheetList from './components/sheets/SheetList';
-import type { ToastMessage } from './components/ui/Toast';
-import Toast from './components/ui/Toast';
-import { useAuth } from './context/AuthContext';
+import Toast, { type ToastMessage } from './components/ui/Toast';
+import { useAuth } from './context/useAuth';
 
 type View = 'list' | 'editor';
 
