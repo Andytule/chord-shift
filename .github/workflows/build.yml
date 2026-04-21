@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# Cancel in-progress runs on the same branch to avoid wasted minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Backend: lint, format, type-check, build, test ──────────────────────────
+  backend:
+    name: Backend — Lint, Format, Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting (Prettier)
+        run: npx prettier --check "src/**/*.ts"
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test -- --ci --forceExit
+
+  # ── Frontend: lint, format, build ───────────────────────────────────────────
+  frontend:
+    name: Frontend — Lint, Format & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting (Prettier)
+        run: npx prettier --check "src/**/*.{ts,tsx}"
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder_anon_key
+          VITE_API_URL: http://localhost:5001
+
+  # ── Docker: build both images to verify Dockerfiles are healthy ──────────────
+  docker:
+    name: Docker — Build Images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    # Only run on the default branch or PRs targeting it to keep minutes low
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: false
+          build-args: |
+            VITE_SUPABASE_URL=https://placeholder.supabase.co
+            VITE_SUPABASE_ANON_KEY=placeholder_anon_key
+            VITE_API_URL=http://localhost:5001
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

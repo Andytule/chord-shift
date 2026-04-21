@@ -1,0 +1,513 @@
+openapi: 3.1.0
+
+info:
+  title: ChordShift API
+  version: 1.0.0
+  description: |
+    REST API for the ChordShift chord transposition app.
+
+    Two groups of endpoints are exposed:
+
+    - **`/transpose`** — stateless, no auth required. Accepts a chord sheet and
+      transposition parameters; returns the transformed text and metadata.
+    - **`/sheets`** — authenticated CRUD for saved chord sheets. All requests
+      must carry a Supabase-issued JWT in the `Authorization` header.
+
+servers:
+  - url: http://localhost:5001
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase access token obtained after Google OAuth sign-in.
+
+  schemas:
+    # ── Transpose ──────────────────────────────────────────────────────────────
+    TransposeRequest:
+      type: object
+      required:
+        - sheetText
+      properties:
+        sheetText:
+          type: string
+          minLength: 1
+          description: |
+            Full chord sheet with mixed lyric and chord lines. A line is treated
+            as a chord line when at least 50 % of its whitespace-separated tokens
+            match the chord pattern `[A-G][#b]?` (with optional quality suffix).
+          example: "G    D    Em   C\nSomewhere over the rainbow"
+        semitones:
+          type: integer
+          minimum: -11
+          maximum: 11
+          description: |
+            Number of semitones to shift. Positive = up, negative = down.
+            Used when `strategy` is `"semitone"` (the default).
+          example: 2
+        strategy:
+          type: string
+          enum: [semitone, capo]
+          default: semitone
+          description: |
+            - `semitone` — shifts every chord by `semitones`.
+            - `capo` — simulates a capo at `capoFret`; chords are transposed
+              **down** by that many semitones so they sound correct when played
+              with a capo.
+        capoFret:
+          type: integer
+          minimum: 1
+          maximum: 11
+          description: |
+            Capo fret position. Required (and used) only when `strategy` is
+            `"capo"`.
+          example: 3
+        useFlats:
+          type: boolean
+          description: |
+            Override the automatic sharp/flat preference. When `true` all
+            accidentals are rendered as flats; when `false` all as sharps.
+            Omit to let the service infer the preference from the source key.
+
+    TransposeResponse:
+      type: object
+      required:
+        - transposedText
+        - originalChords
+        - transposedChords
+        - detectedKey
+      properties:
+        transposedText:
+          type: string
+          description: The full chord sheet with every chord token replaced by its transposed equivalent.
+          example: "A    E    F#m  D\nSomewhere over the rainbow"
+        originalChords:
+          type: array
+          items:
+            type: string
+          description: Ordered list of every chord token found in the original sheet.
+          example: ["G", "D", "Em", "C"]
+        transposedChords:
+          type: array
+          items:
+            type: string
+          description: |
+            Ordered list of transposed chord tokens, in the same order as
+            `originalChords`.
+          example: ["A", "E", "F#m", "D"]
+        detectedKey:
+          type: string
+          nullable: true
+          description: |
+            Root note of the most-frequently-occurring chord in the transposed
+            sheet, used as a heuristic for the key. `null` when no chords are
+            detected.
+          example: "A"
+
+    # ── Sheets ─────────────────────────────────────────────────────────────────
+    Sheet:
+      type: object
+      required:
+        - id
+        - user_id
+        - name
+        - sheet_text
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Auto-increment primary key.
+          example: 42
+        user_id:
+          type: string
+          format: uuid
+          description: Supabase user ID of the owner.
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        name:
+          type: string
+          description: Human-readable title for the sheet.
+          example: "Somewhere Over the Rainbow"
+        sheet_text:
+          type: string
+          description: Full chord sheet content.
+          example: "G    D    Em   C\nSomewhere over the rainbow"
+        key:
+          type: string
+          nullable: true
+          description: Detected or user-supplied key of the sheet.
+          example: "G"
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp set by the database on insert.
+          example: "2024-03-01T12:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601 timestamp updated on every PUT.
+          example: "2024-03-02T09:30:00.000Z"
+
+    SheetCreateRequest:
+      type: object
+      required:
+        - name
+        - sheet_text
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Title for the new sheet.
+          example: "Somewhere Over the Rainbow"
+        sheet_text:
+          type: string
+          minLength: 1
+          description: Full chord sheet content.
+          example: "G    D    Em   C\nSomewhere over the rainbow"
+        key:
+          type: string
+          nullable: true
+          description: Optional key label (e.g. `"G"`, `"Bb"`).
+          example: "G"
+
+    SheetUpdateRequest:
+      type: object
+      required:
+        - sheet_text
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: New title. Omit to leave unchanged.
+          example: "Somewhere Over the Rainbow (capo 2)"
+        sheet_text:
+          type: string
+          minLength: 1
+          description: Replacement chord sheet content.
+          example: "A    E    F#m  D\nSomewhere over the rainbow"
+        key:
+          type: string
+          nullable: true
+          description: Updated key label.
+          example: "A"
+
+    # ── Shared errors ──────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: "sheetText is required"
+
+paths:
+  # ── /transpose ────────────────────────────────────────────────────────────────
+  /transpose:
+    post:
+      operationId: transposeSheet
+      summary: Transpose a chord sheet
+      description: |
+        Stateless endpoint — no authentication required, nothing is persisted.
+
+        The service scans each line of `sheetText`. Lines where at least 50 % of
+        tokens match the chord pattern are transposed; all other lines (lyrics,
+        blank lines, comments) are passed through unchanged.
+
+        Sharp vs. flat notation is determined automatically from the source key
+        unless overridden by `useFlats`.
+      tags: [Transpose]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransposeRequest'
+            examples:
+              semitone:
+                summary: Shift up 2 semitones
+                value:
+                  sheetText: "G    D    Em   C\nSomewhere over the rainbow"
+                  semitones: 2
+                  strategy: semitone
+              capo:
+                summary: Capo at fret 3
+                value:
+                  sheetText: "C    G    Am   F\nLet her go"
+                  strategy: capo
+                  capoFret: 3
+              forceFlats:
+                summary: Force flat notation
+                value:
+                  sheetText: "E    B    C#m  A\nSome song"
+                  semitones: 1
+                  useFlats: true
+      responses:
+        '200':
+          description: Transposition successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransposeResponse'
+        '400':
+          description: '`sheetText` is missing or empty.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "sheetText is required"
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── /sheets ───────────────────────────────────────────────────────────────────
+  /sheets:
+    get:
+      operationId: listSheets
+      summary: List saved sheets
+      description: |
+        Returns the 20 most recently created sheets belonging to the
+        authenticated user, ordered by `created_at` descending.
+      tags: [Sheets]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of sheets (may be empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sheets]
+                properties:
+                  sheets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sheet'
+        '401':
+          description: Missing, malformed, or expired JWT.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing:
+                  value:
+                    error: "Missing or malformed Authorization header"
+                expired:
+                  value:
+                    error: "Invalid or expired token"
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      operationId: createSheet
+      summary: Create a sheet
+      description: Saves a new chord sheet for the authenticated user.
+      tags: [Sheets]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SheetCreateRequest'
+            example:
+              name: "Somewhere Over the Rainbow"
+              sheet_text: "G    D    Em   C\nSomewhere over the rainbow"
+              key: "G"
+      responses:
+        '201':
+          description: Sheet created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sheet]
+                properties:
+                  sheet:
+                    $ref: '#/components/schemas/Sheet'
+        '400':
+          description: Validation error — `name` or `sheet_text` missing or empty.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  value:
+                    error: "name is required"
+                missingText:
+                  value:
+                    error: "sheet_text is required"
+        '401':
+          description: Missing, malformed, or expired JWT.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sheets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Integer primary key of the sheet.
+        schema:
+          type: integer
+          example: 42
+
+    get:
+      operationId: getSheet
+      summary: Get a sheet by ID
+      description: |
+        Returns a single sheet. The sheet must belong to the authenticated user;
+        sheets owned by other users are treated as not found.
+      tags: [Sheets]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sheet found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sheet]
+                properties:
+                  sheet:
+                    $ref: '#/components/schemas/Sheet'
+        '401':
+          description: Missing, malformed, or expired JWT.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Sheet not found or does not belong to the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Sheet not found"
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      operationId: updateSheet
+      summary: Update a sheet
+      description: |
+        Replaces the content (and optionally the name and key) of an existing
+        sheet. Partial updates are supported: `name` and `key` may be omitted.
+        `updated_at` is set to the current timestamp automatically.
+      tags: [Sheets]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SheetUpdateRequest'
+            example:
+              name: "Somewhere Over the Rainbow (capo 2)"
+              sheet_text: "A    E    F#m  D\nSomewhere over the rainbow"
+              key: "A"
+      responses:
+        '200':
+          description: Sheet updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sheet]
+                properties:
+                  sheet:
+                    $ref: '#/components/schemas/Sheet'
+        '400':
+          description: '`sheet_text` is missing or empty.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "sheet_text is required"
+        '401':
+          description: Missing, malformed, or expired JWT.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Sheet not found or does not belong to the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Sheet not found"
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteSheet
+      summary: Delete a sheet
+      description: |
+        Permanently deletes a sheet. The sheet must belong to the authenticated
+        user. Returns a success message; returns 200 even if the row was already
+        absent (Supabase `delete` is idempotent).
+      tags: [Sheets]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sheet deleted (or was already absent).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: "Sheet deleted successfully"
+        '401':
+          description: Missing, malformed, or expired JWT.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

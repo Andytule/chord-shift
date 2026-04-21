@@ -34,6 +34,7 @@ export default [
       'react-refresh': reactRefresh,
     },
     rules: {
+      // TypeScript
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -41,20 +42,23 @@ export default [
       ],
       '@typescript-eslint/ban-ts-comment': 'warn',
 
+      // React
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': 'warn',
 
+      // Imports
       'import/no-duplicates': ['error', { 'prefer-inline': true }],
       'import/first': 'error',
       'import/newline-after-import': 'error',
       'import/no-unresolved': 'error',
-
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
 
+      // Style (delegated to Prettier)
       'prettier/prettier': 'error',
 
+      // General
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
     settings: {

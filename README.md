@@ -15,7 +15,7 @@ A full-stack chord transposition web app. Users paste a chord sheet (mixed lyric
 | Frontend   | React 19, TypeScript, Vite 8, SCSS        |
 | Backend    | Node.js, Express 5, TypeScript, ts-node   |
 | Auth / DB  | Supabase (Google OAuth, PostgreSQL)       |
-| Deployment | GitHub Pages (frontend), manual (backend) |
+| Deployment | GitHub Pages (frontend), Docker (backend) |
 
 ---
 
@@ -23,34 +23,46 @@ A full-stack chord transposition web app. Users paste a chord sheet (mixed lyric
 
 ```
 chord-shift/
-├── frontend/               # React SPA
-│   ├── src/
-│   │   ├── App.tsx         # Root component — view state, all handlers
-│   │   ├── api/
-│   │   │   └── client.ts   # All fetch calls + auth token management
-│   │   ├── components/
-│   │   │   ├── auth/       # LoginPage (Google OAuth via Supabase)
-│   │   │   ├── editor/     # ChordSheetEditor (textarea), TransposeControls
-│   │   │   ├── sheets/     # SheetList (saved sheets grid)
-│   │   │   └── ui/         # Toast, ConfirmModal
-│   │   ├── context/
-│   │   │   └── AuthContext.tsx  # Supabase session + user
-│   │   ├── lib/
-│   │   │   └── supabase.ts      # Supabase client (anon key)
-│   │   └── styles/
-│   │       ├── abstracts/  # SCSS variables
-│   │       ├── base/       # Global resets
-│   │       └── main.scss   # Entry — imports all partials
-│   ├── .env                # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
-│   └── vite.config.ts      # base: '/chord-shift/'
+├── .github/
+│   └── workflows/
+│       └── build.yml           # Single CI workflow — lint, format, build, test, Docker
+├── .prettierrc                 # Shared Prettier config (inherited by both workspaces)
+├── docker-compose.yml          # Runs frontend + backend containers together
+├── .env.example                # Template for docker-compose environment variables
 │
-├── backend/                # Express REST API
+├── frontend/
+│   ├── Dockerfile              # Multi-stage: Vite build → nginx:alpine
+│   ├── nginx.conf              # SPA fallback + asset caching
 │   ├── src/
-│   │   ├── index.ts        # App bootstrap, CORS, route mounting
-│   │   ├── env.ts          # dotenv.config() — imported first in index.ts
+│   │   ├── App.tsx             # Root component — view state, all handlers
+│   │   ├── api/
+│   │   │   └── client.ts       # All fetch calls + auth token management
+│   │   ├── components/
+│   │   │   ├── auth/           # LoginPage (Google OAuth via Supabase)
+│   │   │   ├── editor/         # ChordSheetEditor (textarea), TransposeControls
+│   │   │   ├── sheets/         # SheetList (saved sheets grid)
+│   │   │   └── ui/             # Toast, ConfirmModal
+│   │   ├── context/
+│   │   │   └── AuthContext.tsx # Supabase session + user
+│   │   ├── lib/
+│   │   │   └── supabase.ts     # Supabase client (anon key)
+│   │   └── styles/
+│   │       ├── abstracts/      # SCSS variables
+│   │       ├── base/           # Global resets
+│   │       └── main.scss       # Entry — imports all partials
+│   ├── .env                    # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
+│   └── vite.config.ts          # base: '/chord-shift/'
+│
+├── backend/
+│   ├── Dockerfile              # Multi-stage: tsc build → node:alpine
+│   ├── openapi/
+│   │   └── openapi.yml         # Full OpenAPI 3.1 spec for all endpoints
+│   ├── src/
+│   │   ├── index.ts            # App bootstrap, CORS, route mounting
+│   │   ├── env.ts              # dotenv.config() — imported first in index.ts
 │   │   ├── routes/
-│   │   │   ├── transpose.ts  # POST /transpose — stateless chord transformation
-│   │   │   └── sheets.ts     # CRUD /sheets — all routes require JWT
+│   │   │   ├── transpose.ts    # POST /transpose — stateless chord transformation
+│   │   │   └── sheets.ts       # CRUD /sheets — all routes require JWT
 │   │   ├── __tests__/
 │   │   │   ├── SemitoneTransposer.test.ts
 │   │   │   ├── CapoTransposer.test.ts
@@ -59,21 +71,21 @@ chord-shift/
 │   │   ├── middleware/
 │   │   │   └── requireAuth.ts  # Validates Supabase Bearer JWT, sets req.userId
 │   │   ├── services/
-│   │   │   ├── ChordTransformationService.ts  # Orchestration: parse → transform → reconstruct
-│   │   │   └── TransformationFactory.ts       # Factory: 'semitone' | 'capo' → strategy
+│   │   │   ├── ChordTransformationService.ts
+│   │   │   └── TransformationFactory.ts
 │   │   └── lib/
 │   │       ├── chord/
-│   │       │   ├── ChordComponent.ts    # Interface (Composite pattern)
-│   │       │   ├── Chord.ts             # Leaf — single chord token
-│   │       │   └── ChordProgression.ts  # Composite — collection of chords
+│   │       │   ├── ChordComponent.ts
+│   │       │   ├── Chord.ts
+│   │       │   └── ChordProgression.ts
 │   │       └── transposers/
-│   │           ├── TranspositionStrategy.ts  # Interface (Strategy pattern)
-│   │           ├── SemitoneTransposer.ts     # Transposes by N semitones
-│   │           └── CapoTransposer.ts         # Transposes DOWN by capo fret (wraps Semitone)
-│   └── .env                # SUPABASE_URL, SUPABASE_ANON_KEY, PORT
+│   │           ├── TranspositionStrategy.ts
+│   │           ├── SemitoneTransposer.ts
+│   │           └── CapoTransposer.ts
+│   └── .env                    # SUPABASE_URL, SUPABASE_ANON_KEY, PORT
 │
 └── types/
-    └── supabase.ts         # Generated Supabase database types (shared)
+    └── supabase.ts             # Generated Supabase database types (shared)
 ```
 
 ---
@@ -82,7 +94,7 @@ chord-shift/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - A Supabase project with Google OAuth enabled and a `chord_sheets` table
 
 ### 1. Backend
@@ -105,6 +117,42 @@ npm run dev       # Vite dev server — http://localhost:5173
 
 ---
 
+## Docker
+
+Both services are fully containerised. The frontend is served by nginx; the backend runs compiled JavaScript on Node.
+
+### Run with docker-compose
+
+```bash
+cp .env.example .env
+# fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY in .env
+
+docker-compose up --build
+```
+
+| Service  | URL                   |
+| -------- | --------------------- |
+| Frontend | http://localhost:3000 |
+| Backend  | http://localhost:5001 |
+
+### Build images individually
+
+```bash
+# Backend (run from repo root)
+docker build -f backend/Dockerfile -t chord-shift-backend .
+
+# Frontend (run from repo root)
+docker build -f frontend/Dockerfile \
+  --build-arg VITE_SUPABASE_URL=https://<project>.supabase.co \
+  --build-arg VITE_SUPABASE_ANON_KEY=<anon_key> \
+  --build-arg VITE_API_URL=http://localhost:5001 \
+  -t chord-shift-frontend .
+```
+
+> **Note:** Both Dockerfiles use the repo root as build context so the backend image can access the shared `types/` directory.
+
+---
+
 ## Environment Variables
 
 ### `backend/.env`
@@ -120,59 +168,78 @@ PORT=5001
 ```env
 VITE_SUPABASE_URL=https://<project>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon_key>
-VITE_API_URL=http://localhost:5001   # omit in production (defaults to localhost:5001)
+VITE_API_URL=http://localhost:5001
 ```
 
 ---
 
 ## API Reference
 
+The full OpenAPI 3.1 specification lives at [`backend/openapi/openapi.yml`](backend/openapi/openapi.yml). A summary is provided below.
+
 ### `POST /transpose`
 
-Stateless — transposes a chord sheet in memory, returns the result. No auth required.
+Stateless — no auth required. Transposes a chord sheet in memory and returns the result.
 
 **Request body:**
 
-| Field       | Type                     | Required | Description                                                                              |
-| ----------- | ------------------------ | -------- | ---------------------------------------------------------------------------------------- |
-| `sheetText` | string                   | ✓        | Full chord sheet (mixed lyrics + chords)                                                 |
-| `semitones` | number                   |          | Semitones to shift (positive = up, negative = down). Used when `strategy` is `semitone`. |
-| `strategy`  | `"semitone"` \| `"capo"` |          | Defaults to `"semitone"`                                                                 |
-| `capoFret`  | number                   |          | Fret position. Used when `strategy` is `"capo"`.                                         |
-| `useFlats`  | boolean                  |          | Override sharp/flat preference for all chords in the sheet                               |
+| Field       | Type                     | Required | Description                                                                               |
+| ----------- | ------------------------ | -------- | ----------------------------------------------------------------------------------------- |
+| `sheetText` | string                   | ✓        | Full chord sheet (mixed lyrics + chords)                                                  |
+| `semitones` | integer                  |          | Semitones to shift (positive = up, negative = down). Used when `strategy` is `semitone`. |
+| `strategy`  | `"semitone"` \| `"capo"` |          | Defaults to `"semitone"`                                                                  |
+| `capoFret`  | integer                  |          | Fret position. Used when `strategy` is `"capo"`.                                          |
+| `useFlats`  | boolean                  |          | Override sharp/flat preference for all chords in the sheet.                               |
 
-**Response:**
+**Response `200`:**
 
 ```json
 {
-  "transposedText": "...",
-  "originalChords": ["G", "D", "Em"],
-  "transposedChords": ["A", "E", "F#m"],
-  "detectedKey": "G"
+  "transposedText": "A    E    F#m  D\nSomewhere over the rainbow",
+  "originalChords": ["G", "D", "Em", "C"],
+  "transposedChords": ["A", "E", "F#m", "D"],
+  "detectedKey": "A"
 }
 ```
 
 ---
 
-### `GET /sheets`
+### `/sheets` — all routes require `Authorization: Bearer <supabase_jwt>`
 
-Returns the 20 most recent sheets for the authenticated user.
+| Method   | Path          | Description                                          |
+| -------- | ------------- | ---------------------------------------------------- |
+| `GET`    | `/sheets`     | Returns the 20 most recent sheets for the user       |
+| `GET`    | `/sheets/:id` | Returns a single sheet by ID                         |
+| `POST`   | `/sheets`     | Creates a sheet — body: `{ name, sheet_text, key? }` |
+| `PUT`    | `/sheets/:id` | Updates a sheet — body: `{ name?, sheet_text, key? }`|
+| `DELETE` | `/sheets/:id` | Deletes a sheet                                      |
 
-### `GET /sheets/:id`
+---
 
-Returns a single sheet by ID (must belong to the authenticated user).
+## CI
 
-### `POST /sheets`
+A single workflow file (`.github/workflows/build.yml`) runs on every push and pull request.
 
-Body: `{ name: string, sheet_text: string, key?: string }`
+| Job        | Steps                                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| `backend`  | Prettier check → ESLint → `tsc` build → Jest tests                         |
+| `frontend` | Prettier check → ESLint → Vite build                                        |
+| `docker`   | Build both Docker images (runs after both jobs above; main branch / PRs only) |
 
-### `PUT /sheets/:id`
+---
 
-Body: `{ name?: string, sheet_text: string, key?: string }`
+## Code Style
 
-### `DELETE /sheets/:id`
+Prettier and ESLint are configured consistently across both workspaces.
 
-All `/sheets` routes require `Authorization: Bearer <supabase_jwt>`.
+- **Prettier** — single root `.prettierrc` inherited by both `frontend/` and `backend/`.
+- **ESLint** — per-workspace `eslint.config.mjs` files with identical shared rules. The backend adds `globals.node`; the frontend adds `globals.browser` and the React hooks / refresh plugins.
+
+```bash
+npm run format    # Prettier write
+npm run lint      # ESLint check
+npm run lint:fix  # ESLint auto-fix
+```
 
 ---
 
@@ -190,7 +257,7 @@ All `/sheets` routes require `Authorization: Bearer <supabase_jwt>`.
 
 ### Sharp / Flat Logic
 
-The app decides once per sheet whether to use sharp or flat notation, keeping all chords consistent. Unambiguously flat destinations (F, Bb, Eb, Ab) always use flats. For the two enharmonic ambiguities — Db/C# and Gb/F# — the notation is inherited from the source key: a sharp-flavoured source (e.g. E, B, A) landing on index 6 produces F#, while a flat-flavoured source (e.g. Gb, Db) produces Gb. The user can override everything with the `useFlats` toggle.
+The app decides once per sheet whether to use sharp or flat notation, keeping all chords consistent. Unambiguously flat destinations (F, Bb, Eb, Ab) always use flats. For the two enharmonic ambiguities — Db/C# and Gb/F# — the notation is inherited from the source key. The user can override everything with the `useFlats` toggle.
 
 ### Auth Flow
 
@@ -214,22 +281,22 @@ Vite is configured with `base: '/chord-shift/'` to match the GitHub Pages subpat
 
 ### Backend
 
-No automated deployment is configured. The backend must be hosted separately (e.g. Railway, Render, Fly.io). Set `VITE_API_URL` in the frontend production environment to point at the deployed backend URL.
+```bash
+docker build -f backend/Dockerfile -t chord-shift-backend .
+docker run -p 5001:5001 --env-file backend/.env chord-shift-backend
+```
 
-CORS is currently allowed for `https://andytule.github.io` and `http://localhost:5173`.
+Set `VITE_API_URL` in the frontend production environment to point at the deployed backend URL. Update the `cors` origin list in `backend/src/index.ts` to include your production frontend domain.
 
 ---
 
 ## Testing
-
-The backend has a full Jest test suite covering unit and integration tests.
 
 ```bash
 cd backend
 npm test                  # run all tests
 npm run test:watch        # re-run on file save
 npm run test:coverage     # run with coverage report
-make run-tests            # via Makefile
 ```
 
 | File                                 | What it covers                                                                                                                    |
@@ -252,19 +319,21 @@ Supabase is mocked via a thenable chain so tests run without a live database. `r
 | `npm run dev`           | Start dev server with nodemon + ts-node |
 | `npm run build`         | Compile TypeScript to `dist/`           |
 | `npm run start`         | Run compiled output                     |
-| `npm run lint`          | ESLint                                  |
-| `npm run format`        | Prettier                                |
+| `npm run lint`          | ESLint check                            |
+| `npm run lint:fix`      | ESLint auto-fix                         |
+| `npm run format`        | Prettier write                          |
 | `npm test`              | Run all tests                           |
 | `npm run test:watch`    | Re-run tests on file save               |
 | `npm run test:coverage` | Run tests with coverage report          |
 
 ### Frontend
 
-| Script            | Description                        |
-| ----------------- | ---------------------------------- |
-| `npm run dev`     | Vite dev server                    |
-| `npm run build`   | Type-check + Vite build to `dist/` |
-| `npm run preview` | Preview production build locally   |
-| `npm run deploy`  | Build + push to `gh-pages` branch  |
-| `npm run lint`    | ESLint                             |
-| `npm run format`  | Prettier                           |
+| Script             | Description                        |
+| ------------------ | ---------------------------------- |
+| `npm run dev`      | Vite dev server                    |
+| `npm run build`    | Type-check + Vite build to `dist/` |
+| `npm run preview`  | Preview production build locally   |
+| `npm run deploy`   | Build + push to `gh-pages` branch  |
+| `npm run lint`     | ESLint check                       |
+| `npm run lint:fix` | ESLint auto-fix                    |
+| `npm run format`   | Prettier write                     |
