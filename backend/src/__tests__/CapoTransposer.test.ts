@@ -1,6 +1,6 @@
 import { CapoTransposer } from '../lib/transposers/CapoTransposer';
 
-const t = new CapoTransposer();
+const t: CapoTransposer = new CapoTransposer();
 
 describe('CapoTransposer', () => {
   it('capo 2: A → G (song in A, player uses G shapes)', () => {

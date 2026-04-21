@@ -34,7 +34,7 @@ jest.mock('@supabase/supabase-js', () => ({
 }));
 
 function makeChain(result: SupabaseChainResult): SupabaseChain {
-  const chain = Promise.resolve(result) as SupabaseChain;
+  const chain: SupabaseChain = Promise.resolve(result) as SupabaseChain;
   const methods: Array<keyof Omit<SupabaseChain, keyof Promise<SupabaseChainResult>>> = [
     'select',
     'eq',
@@ -63,7 +63,7 @@ function buildApp(): Application {
   return app;
 }
 
-const app = buildApp();
+const app: express.Application = buildApp();
 
 const MOCK_SHEET = {
   id: 1,
@@ -140,11 +140,11 @@ describe('POST /transpose', () => {
   });
 
   it('200: lyric lines are left untouched', async () => {
-    const sheet = 'G  D  Em\nThe words of the song\nC  G';
+    const sheet: string = 'G  D  Em\nThe words of the song\nC  G';
     const res = await request(app).post('/transpose').send({ sheetText: sheet, semitones: 2 });
 
     expect(res.status).toBe(200);
-    const lines = (res.body.transposedText as string).split('\n');
+    const lines: string[] = (res.body.transposedText as string).split('\n');
     expect(lines[0]).toBe('A  E  F#m');
     expect(lines[1]).toBe('The words of the song');
     expect(lines[2]).toBe('D  A');

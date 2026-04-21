@@ -1,6 +1,6 @@
 import { ChordTransformationService } from '../services/ChordTransformationService';
 
-const svc = new ChordTransformationService('semitone');
+const svc: ChordTransformationService = new ChordTransformationService('semitone');
 
 function transpose(text: string, semitones: number, useFlats?: boolean) {
   return svc.transform(text, semitones, useFlats);
@@ -13,13 +13,13 @@ describe('ChordTransformationService — chord line detection', () => {
   });
 
   it('leaves a lyric line untouched', () => {
-    const lyric = "The sun comes up, it's a new day dawning";
+    const lyric: string = "The sun comes up, it's a new day dawning";
     const { transposedText } = transpose(lyric, 2);
     expect(transposedText).toBe(lyric);
   });
 
   it('leaves a section header untouched', () => {
-    const header = '[Chorus]';
+    const header: string = '[Chorus]';
     const { transposedText } = transpose(header, 2);
     expect(transposedText).toBe(header);
   });
@@ -30,7 +30,7 @@ describe('ChordTransformationService — chord line detection', () => {
   });
 
   it('handles mixed sheet — only chord lines change', () => {
-    const sheet = [
+    const sheet: string = [
       '[Verse 1]',
       'G               D             Em',
       "The sun comes up, it's a new day",
@@ -39,7 +39,7 @@ describe('ChordTransformationService — chord line detection', () => {
     ].join('\n');
 
     const { transposedText } = transpose(sheet, 2);
-    const lines = transposedText.split('\n');
+    const lines: string[] = transposedText.split('\n');
 
     expect(lines[0]).toBe('[Verse 1]');
     expect(lines[1]).toBe('A               E             F#m');
@@ -219,7 +219,7 @@ describe('ChordTransformationService — formatting preservation', () => {
 });
 
 describe('ChordTransformationService — capo strategy', () => {
-  const capoSvc = new ChordTransformationService('capo');
+  const capoSvc: ChordTransformationService = new ChordTransformationService('capo');
 
   it('capo 2: transposes chord sheet DOWN by 2', () => {
     const { transposedText } = capoSvc.transform('A  D  E', 2);
@@ -232,7 +232,7 @@ describe('ChordTransformationService — capo strategy', () => {
   });
 
   it('setStrategy switches from semitone to capo', () => {
-    const s = new ChordTransformationService('semitone');
+    const s: ChordTransformationService = new ChordTransformationService('semitone');
     s.setStrategy('capo');
     const { transposedText } = s.transform('A  D  E', 2);
     expect(transposedText).toBe('G  C  D');

@@ -61,9 +61,9 @@ describe('destinationUsesFlats', () => {
 });
 
 describe('SemitoneTransposer — basic transposition', () => {
-  const chromatic = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const chromatic: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   chromatic.forEach((note, i) => {
-    const next = chromatic[(i + 1) % 12];
+    const next: string = chromatic[(i + 1) % 12];
     it(`${note} + 1 semitone = ${next}`, () => {
       expect(t.transpose(note, 1, false)).toBe(next);
     });
