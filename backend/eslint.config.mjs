@@ -1,4 +1,3 @@
-// eslint.config.mjs
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
@@ -30,7 +29,6 @@ export default [
       prettier: prettierPlugin,
     },
     rules: {
-      // TypeScript recommended rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -38,20 +36,16 @@ export default [
       ],
       '@typescript-eslint/ban-ts-comment': 'warn',
 
-      // Import rules
       'import/no-duplicates': ['error', { 'prefer-inline': true }],
       'import/first': 'error',
       'import/newline-after-import': 'error',
       'import/no-unresolved': 'error',
 
-      // Simple import sort
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
 
-      // Prettier
       'prettier/prettier': 'error',
 
-      // General
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
     settings: {

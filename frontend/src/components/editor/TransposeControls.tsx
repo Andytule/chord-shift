@@ -1,6 +1,24 @@
 import React from 'react';
 
-const KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+const KEYS = [
+  'C',
+  'C#',
+  'Db',
+  'D',
+  'D#',
+  'Eb',
+  'E',
+  'F',
+  'F#',
+  'Gb',
+  'G',
+  'G#',
+  'Ab',
+  'A',
+  'A#',
+  'Bb',
+  'B',
+];
 
 interface Props {
   semitones: number;
@@ -55,7 +73,9 @@ const TransposeControls: React.FC<Props> = ({
         >
           <option value="">— Auto —</option>
           {KEYS.map((k) => (
-            <option key={k} value={k}>{k}</option>
+            <option key={k} value={k}>
+              {k}
+            </option>
           ))}
         </select>
       </div>
@@ -64,9 +84,13 @@ const TransposeControls: React.FC<Props> = ({
       <div className="control-group">
         <label className="control-label">Transpose</label>
         <div className="stepper">
-          <button className="step-btn" onClick={() => handleStep(-1)} disabled={loading}>−</button>
+          <button className="step-btn" onClick={() => handleStep(-1)} disabled={loading}>
+            −
+          </button>
           <span className="step-value">{semitones > 0 ? `+${semitones}` : semitones}</span>
-          <button className="step-btn" onClick={() => handleStep(1)} disabled={loading}>+</button>
+          <button className="step-btn" onClick={() => handleStep(1)} disabled={loading}>
+            +
+          </button>
         </div>
       </div>
 
@@ -77,16 +101,22 @@ const TransposeControls: React.FC<Props> = ({
           <button
             className={`toggle-btn ${!useFlats ? 'active' : ''}`}
             onClick={() => onUseFlatsChange(false)}
-          >♯ Sharps</button>
+          >
+            ♯ Sharps
+          </button>
           <button
             className={`toggle-btn ${useFlats ? 'active' : ''}`}
             onClick={() => onUseFlatsChange(true)}
-          >♭ Flats</button>
+          >
+            ♭ Flats
+          </button>
         </div>
       </div>
 
       <div className="control-actions">
-        <button className="btn-ghost" onClick={onReset}>Reset</button>
+        <button className="btn-ghost" onClick={onReset}>
+          Reset
+        </button>
       </div>
     </div>
   );

@@ -23,11 +23,10 @@ const ConfirmModal: React.FC<Props> = ({
         <h2 className="modal__title">{title}</h2>
         <p className="modal__subtitle">{message}</p>
         <div className="modal__actions">
-          <button className="btn-ghost" onClick={onCancel}>Cancel</button>
-          <button
-            className={danger ? 'btn-danger' : 'btn-primary'}
-            onClick={onConfirm}
-          >
+          <button className="btn-ghost" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className={danger ? 'btn-danger' : 'btn-primary'} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>
