@@ -65,7 +65,10 @@ export default [
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: './tsconfig.json',
+          project: './tsconfig.app.json',
+        },
+        node: {
+          extensions: ['.ts', '.tsx', '.js', '.jsx'],
         },
       },
     },
