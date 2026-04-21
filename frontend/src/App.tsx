@@ -17,7 +17,7 @@ import { useAuth } from './context/useAuth';
 
 type View = 'list' | 'editor';
 
-const SAMPLE_SHEET = `[Verse 1]
+const SAMPLE_SHEET: string = `[Verse 1]
 G               D             Em
 The sun comes up, it's a new day dawning
 G               D             Em       C
