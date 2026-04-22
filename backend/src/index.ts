@@ -11,7 +11,7 @@ const port = process.env.PORT || 5001;
 
 app.use(
   cors({
-    origin: ['https://andytule.github.io', 'http://localhost:5173'],
+    origin: ['https://andytule.github.io', 'http://localhost:5173', 'http://localhost:3000'],
   })
 );
 app.use(express.json());

@@ -1,26 +1,27 @@
-# ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.22 AS builder
 
 WORKDIR /app
 
 COPY frontend/package*.json ./
 RUN npm ci
 
-COPY frontend/ ./
-
-# Build args are forwarded as Vite env vars at build time
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_API_URL=$VITE_API_URL
+
+COPY frontend/ ./
+
+RUN rm -f .env .env.local .env.production .env.production.local
 
 RUN npm run build
 
-# ── Production stage (nginx) ───────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS production
+FROM nginx:1.28-alpine AS production
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html/chord-shift
 
-# SPA fallback: all routes serve index.html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

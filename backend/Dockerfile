@@ -1,27 +1,32 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.22 AS builder
 
-WORKDIR /app
+# Replicate repo layout so tsconfig rootDir: "../" resolves correctly:
+#   /build/types/     ← shared types (repo root)
+#   /build/backend/   ← source + tsconfig
+WORKDIR /build
 
-# Copy root-level shared types so the TypeScript compiler can resolve them
-COPY types/ ../types/
+COPY types/ ./types/
+COPY backend/package*.json ./backend/
+RUN npm ci --prefix ./backend
 
-COPY backend/package*.json ./
-RUN npm ci
+COPY backend/ ./backend/
 
-COPY backend/ ./
-RUN npm run build
+# With rootDir: "../", tsc output mirrors the full tree:
+#   /build/backend/dist/backend/src/index.js
+RUN npm run build --prefix ./backend
 
 # ── Production stage ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS production
+FROM node:20-alpine3.22 AS production
 
 ENV NODE_ENV=production
 WORKDIR /app
 
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /build/backend/package*.json ./
 RUN npm ci --omit=dev
 
-COPY --from=builder /app/dist ./dist
+# dist/backend/src/index.js is the entry point
+COPY --from=builder /build/backend/dist ./dist
 
 EXPOSE 5001
 

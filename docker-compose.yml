@@ -19,8 +19,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
         VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
     ports:
       - '3000:80'
