@@ -812,6 +812,19 @@
     margin: 0 0 $spacing-lg;
   }
 
+  &__join-btn {
+    width: 100%;
+    margin-top: $spacing-sm;
+    color: rgba(210, 215, 235, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f2f3f5;
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+  }
+
   &__footer {
     font-size: 0.8125rem;
     color: rgba(180, 185, 210, 0.65);

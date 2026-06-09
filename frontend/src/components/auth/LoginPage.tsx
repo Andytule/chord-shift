@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 
 import { useAuth } from '../../context/useAuth';
 
-const LoginPage: React.FC = () => {
+interface Props {
+  onJoinJam: () => void;
+}
+
+const LoginPage: React.FC<Props> = ({ onJoinJam }) => {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -24,11 +28,15 @@ const LoginPage: React.FC = () => {
         </div>
 
         <h1 className="login-card__heading">Welcome back</h1>
-        <p className="login-card__sub">Sign in to access your chord sheets</p>
+        <p className="login-card__sub">Transpose chord sheets and jam together in real-time</p>
 
         <button className="btn-google" onClick={handleSignIn} disabled={loading}>
           <GoogleIcon />
           {loading ? 'Redirecting…' : 'Continue with Google'}
+        </button>
+
+        <button className="btn-ghost login-card__join-btn" onClick={onJoinJam}>
+          🎸 Join a jam session
         </button>
 
         <p className="login-card__footer">Your sheets are private and only visible to you.</p>

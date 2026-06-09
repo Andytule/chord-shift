@@ -9,6 +9,7 @@ import {
   transposeSheet,
   updateSheet,
 } from './api/client';
+import LoginPage from './components/auth/LoginPage';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
 import LobbyGate from './components/lobby/LobbyGate';
@@ -35,7 +36,7 @@ And whatever lies before me`;
 let toastCounter = 0;
 
 const App = (): React.ReactElement => {
-  const { user, session, signOut, signInWithGoogle } = useAuth();
+  const { user, session, signOut } = useAuth();
   const { isInLobby } = useLobby();
 
   // Keep the API client's auth token in sync with the Supabase session
@@ -191,53 +192,29 @@ const App = (): React.ReactElement => {
     }
   }, [isInLobby, view]);
 
-  // If not logged in and not in a lobby, show login/join prompt
+  // If not logged in and not in a lobby, show login page
   if (!user && !isInLobby) {
-    return (
-      <div className="app">
-        <header className="header">
-          <div className="header__left">
-            <div className="header__brand">
-              <span className="header__logo">♩</span>
-              <span className="header__title">ChordShift</span>
-            </div>
-          </div>
-          <div className="header__right">
-            <button className="btn-primary" onClick={() => setView('lobby')}>
-              🎸 Join Jam
-            </button>
-          </div>
-        </header>
-        <main className="main">
-          {view === 'lobby' ? (
-            <LobbyGate initialState={null} onBack={() => setView('list')} />
-          ) : (
-            <div className="auth-prompt">
-              <div className="auth-prompt__content">
-                <h1 className="auth-prompt__title">
-                  <span className="header__logo" style={{ fontSize: '4rem' }}>
-                    ♩
-                  </span>
-                  <br />
-                  ChordShift
-                </h1>
-                <p className="auth-prompt__description">
-                  Transpose chord sheets and jam together in real-time
-                </p>
-                <div className="auth-prompt__actions">
-                  <button className="btn-primary" onClick={signInWithGoogle}>
-                    Sign in with Google
-                  </button>
-                  <button className="btn-ghost" onClick={() => setView('lobby')}>
-                    Join a jam session
-                  </button>
-                </div>
+    if (view === 'lobby') {
+      return (
+        <div className="app">
+          <header className="header">
+            <div className="header__left">
+              <button className="header__back" onClick={() => setView('list')}>
+                ← Back
+              </button>
+              <div className="header__brand">
+                <span className="header__logo">♩</span>
+                <span className="header__title">ChordShift</span>
               </div>
             </div>
-          )}
-        </main>
-      </div>
-    );
+          </header>
+          <main className="main">
+            <LobbyGate initialState={null} onBack={() => setView('list')} />
+          </main>
+        </div>
+      );
+    }
+    return <LoginPage onJoinJam={() => setView('lobby')} />;
   }
 
   return (
