@@ -44,6 +44,7 @@ export function registerLobbyHandlers(io: Server, socket: Socket, store: LobbySt
       socket.emit('lobby:created', {
         code: lobby.code,
         state: lobby.state,
+        participants: sanitiseParticipants(lobby.participants),
       });
 
       console.log(`[lobby] Created ${lobby.code} by socket ${socket.id} (${displayName})`);

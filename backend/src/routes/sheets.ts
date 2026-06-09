@@ -6,10 +6,21 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
-const supabase: SupabaseClient = createClient<Database>(
-  process.env.SUPABASE_URL ?? '',
-  process.env.SUPABASE_ANON_KEY ?? ''
-);
+// Lazy singleton — created on first request so process.env is guaranteed
+// to be populated by the time this runs (Docker env vars, dotenv, etc.)
+let _supabase: SupabaseClient<Database> | null = null;
+
+function getSupabase(): SupabaseClient<Database> {
+  if (!_supabase) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
+    }
+    _supabase = createClient<Database>(url, key);
+  }
+  return _supabase;
+}
 
 // All sheets routes require a valid Supabase JWT
 router.use(requireAuth);
@@ -18,7 +29,7 @@ router.use(requireAuth);
 // Returns the 20 most recently saved sheets belonging to the authenticated user.
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('chord_sheets')
       .select('*')
       .eq('user_id', req.userId)
@@ -36,7 +47,7 @@ router.get('/', async (req, res) => {
 // GET /sheets/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('chord_sheets')
       .select('*')
       .eq('id', Number(req.params.id))
@@ -70,7 +81,7 @@ router.post('/', async (req, res) => {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('chord_sheets')
       .insert({ name, sheet_text, key: key ?? null, user_id: req.userId })
       .select()
@@ -95,7 +106,7 @@ router.put('/:id', async (req, res) => {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('chord_sheets')
       .update({
         ...(name ? { name } : {}),
@@ -123,7 +134,7 @@ router.put('/:id', async (req, res) => {
 // DELETE /sheets/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('chord_sheets')
       .delete()
       .eq('id', Number(req.params.id))

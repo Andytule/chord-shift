@@ -2,6 +2,7 @@ import React from 'react';
 
 import App from '../App';
 import LoginPage from '../components/auth/LoginPage';
+import { LobbyProvider } from './LobbyContext';
 import { useAuth } from './useAuth';
 
 const Root = (): React.ReactElement => {
@@ -15,7 +16,13 @@ const Root = (): React.ReactElement => {
     );
   }
 
-  return session ? <App /> : <LoginPage />;
+  return session ? (
+    <LobbyProvider>
+      <App />
+    </LobbyProvider>
+  ) : (
+    <LoginPage />
+  );
 };
 
 export default Root;

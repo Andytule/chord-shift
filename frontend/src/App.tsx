@@ -11,11 +11,14 @@ import {
 } from './api/client';
 import ChordSheetEditor from './components/editor/ChordSheetEditor';
 import TransposeControls from './components/editor/TransposeControls';
+import LobbyGate from './components/lobby/LobbyGate';
+import LobbyView from './components/lobby/LobbyView';
 import SheetList from './components/sheets/SheetList';
 import Toast, { type ToastMessage } from './components/ui/Toast';
 import { useAuth } from './context/useAuth';
+import { useLobby } from './context/useLobby';
 
-type View = 'list' | 'editor';
+type View = 'list' | 'editor' | 'lobby';
 
 const SAMPLE_SHEET: string = `[Verse 1]
 G               D             Em
@@ -33,11 +36,13 @@ let toastCounter = 0;
 
 const App = (): React.ReactElement => {
   const { user, session, signOut } = useAuth();
+  const { isInLobby } = useLobby();
 
   // Keep the API client's auth token in sync with the Supabase session
   useEffect(() => {
     setAuthToken(session?.access_token ?? null);
   }, [session]);
+
   const [view, setView] = useState<View>('list');
   const [sheetText, setSheetText] = useState<string>('');
   const [sheetName, setSheetName] = useState<string>('');
@@ -117,7 +122,6 @@ const App = (): React.ReactElement => {
     if (!sheetText.trim()) return;
     setLoading(true);
     try {
-      // Re-transpose the current text by 0 semitones to rewrite notation only
       const result: TransposeResponse = await transposeSheet({
         sheetText,
         semitones: 0,
@@ -161,19 +165,45 @@ const App = (): React.ReactElement => {
     }
   };
 
+  const currentLobbyState = {
+    sheetText,
+    semitones,
+    strategy: 'semitone' as const,
+    capoFret: 0,
+    useFlats,
+    scrollY: 0,
+    detectedKey: selectedKey,
+  };
+
+  const handleJamClick = () => {
+    if (isInLobby) {
+      setView('lobby');
+    } else {
+      setView('lobby');
+    }
+  };
+
+  // When lobby is created/joined, navigate to lobby view
+  // This is driven by useLobby state — when isInLobby becomes true we show the lobby
+  useEffect(() => {
+    if (isInLobby && view !== 'lobby') {
+      setView('lobby');
+    }
+  }, [isInLobby, view]);
+
   return (
     <div className="app">
       <header className="header">
         <div className="header__left">
-          {view === 'editor' && (
+          {(view === 'editor' || view === 'lobby') && !isInLobby && (
             <button className="header__back" onClick={() => setView('list')}>
               ← Back
             </button>
           )}
           <div
             className="header__brand"
-            onClick={() => setView('list')}
-            style={{ cursor: 'pointer' }}
+            onClick={() => (isInLobby ? undefined : setView('list'))}
+            style={{ cursor: isInLobby ? 'default' : 'pointer' }}
           >
             <span className="header__logo">♩</span>
             <span className="header__title">ChordShift</span>
@@ -198,6 +228,11 @@ const App = (): React.ReactElement => {
               </button>
             </>
           )}
+          {user && !isInLobby && view !== 'lobby' && (
+            <button className="btn-ghost header__jam-btn" onClick={handleJamClick}>
+              🎸 Jam
+            </button>
+          )}
           <div className="header__user">
             {user?.user_metadata?.avatar_url && (
               <img
@@ -214,7 +249,7 @@ const App = (): React.ReactElement => {
         </div>
       </header>
 
-      <main className="main">
+      <main className={`main${view === 'lobby' && isInLobby ? ' main--lobby' : ''}`}>
         {view === 'list' && (
           <SheetList
             onOpen={openExistingSheet}
@@ -245,6 +280,31 @@ const App = (): React.ReactElement => {
               }
             />
           </div>
+        )}
+
+        {view === 'lobby' && !isInLobby && (
+          <LobbyGate
+            initialState={sheetText.trim() ? currentLobbyState : null}
+            onBack={() => setView(sheetText.trim() ? 'editor' : 'list')}
+          />
+        )}
+
+        {view === 'lobby' && isInLobby && (
+          <LobbyView
+            sheetText={sheetText}
+            semitones={semitones}
+            useFlats={useFlats}
+            selectedKey={selectedKey}
+            sheetName={sheetName}
+            loading={loading}
+            onSheetTextChange={setSheetText}
+            onTranspose={handleTransposeImmediate}
+            onUseFlatsChange={handleUseFlatsChange}
+            onKeyChange={setSelectedKey}
+            onNameChange={setSheetName}
+            onReset={handleReset}
+            onLeave={() => setView('editor')}
+          />
         )}
       </main>
 

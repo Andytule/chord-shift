@@ -10,10 +10,21 @@ declare global {
   }
 }
 
-const supabase: SupabaseClient = createClient(
-  process.env.SUPABASE_URL ?? '',
-  process.env.SUPABASE_ANON_KEY ?? ''
-);
+// Lazy singleton — created on first request so process.env is guaranteed
+// to be populated by the time this runs (Docker env vars, dotenv, etc.)
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
+    }
+    _supabase = createClient(url, key);
+  }
+  return _supabase;
+}
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader: string | undefined = req.headers.authorization;
@@ -25,7 +36,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const token: string = authHeader.slice(7);
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await getSupabase().auth.getUser(token);
 
   if (error || !data.user) {
     res.status(401).json({ error: 'Invalid or expired token' });
