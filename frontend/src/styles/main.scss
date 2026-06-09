@@ -679,8 +679,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 // ─── Login Page ──────────────────────────────────────────────────────────────
@@ -690,21 +695,48 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $bg-base;
   padding: $spacing-md;
+
+  // Full-bleed background image
+  background-image: url('/login_page.png');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+
+  // Subtle dark vignette so the card reads clearly
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0, 0, 0, 0.15) 0%,
+      rgba(10, 12, 28, 0.55) 100%
+    );
+    pointer-events: none;
+  }
 }
 
 .login-card {
+  position: relative; // sits above ::before vignette
   width: 100%;
   max-width: 400px;
-  background: $bg-surface;
-  border: 1px solid $border;
+
+  // Glassmorphism — frosted panel over the illustration
+  background: rgba(22, 20, 38, 0.62);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: $radius-lg;
   padding: $spacing-xl $spacing-lg;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
 
   &__brand {
     display: flex;
@@ -715,32 +747,35 @@
 
   &__logo {
     font-size: 1.75rem;
-    color: $accent;
+    color: #c9cdfb;
+    filter: drop-shadow(0 0 8px rgba(140, 150, 255, 0.7));
   }
 
   &__title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: $text-primary;
+    color: #f2f3f5;
     letter-spacing: -0.01em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
   }
 
   &__heading {
     font-size: 1.5rem;
     font-weight: 700;
-    color: $text-primary;
+    color: #f2f3f5;
     margin: 0 0 $spacing-xs;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
   }
 
   &__sub {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: rgba(210, 215, 235, 0.85);
     margin: 0 0 $spacing-lg;
   }
 
   &__footer {
     font-size: 0.8125rem;
-    color: $text-muted;
+    color: rgba(180, 185, 210, 0.65);
     margin: $spacing-md 0 0;
   }
 }
@@ -752,19 +787,28 @@
   gap: 10px;
   width: 100%;
   padding: 10px 20px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
   color: #3c4043;
   font-size: 0.9375rem;
   font-weight: 500;
   border-radius: $radius-sm;
-  border: 1px solid #dadce0;
-  transition: background 0.15s, box-shadow 0.15s;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
   font-family: $font-ui;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
   &:hover:not(:disabled) {
-    background: #f8f9fa;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   &:disabled {
