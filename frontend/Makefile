@@ -1,6 +1,17 @@
-.PHONY: format-code lint build dev docker-build docker-up docker-down docker-logs deploy
+.PHONY: help format-code lint build dev deploy
 
-# ── Local dev (no Docker) ──────────────────────────────────────────────────────
+help:
+	@echo "Frontend Commands"
+	@echo "================="
+	@echo ""
+	@echo "  make dev           - Start Vite dev server (port 5173)"
+	@echo "  make build         - Build for production"
+	@echo "  make lint          - Check code style"
+	@echo "  make format-code   - Format and fix lint issues"
+	@echo "  make deploy        - Deploy to GitHub Pages"
+	@echo ""
+
+# ── Local Development ──────────────────────────────────────────────────────────
 format-code:
 	npm run format
 	npm run lint:fix
@@ -13,23 +24,6 @@ build:
 
 dev:
 	npm run dev
-
-# ── Docker (local development) ────────────────────────────────────────────────
-# Builds the frontend image only (uses build args from root .env)
-docker-build:
-	docker compose -f ../docker-compose.yml build frontend
-
-# Start frontend container (also starts backend if not already running)
-docker-up:
-	docker compose -f ../docker-compose.yml up frontend
-
-# Stop and remove frontend container
-docker-down:
-	docker compose -f ../docker-compose.yml down
-
-# Tail frontend container logs
-docker-logs:
-	docker compose -f ../docker-compose.yml logs -f frontend
 
 # ── Deploy to GitHub Pages ────────────────────────────────────────────────────
 deploy:

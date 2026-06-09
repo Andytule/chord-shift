@@ -1,12 +1,11 @@
 import React from 'react';
 
 import App from '../App';
-import LoginPage from '../components/auth/LoginPage';
 import { LobbyProvider } from './LobbyContext';
 import { useAuth } from './useAuth';
 
 const Root = (): React.ReactElement => {
-  const { session, loading } = useAuth();
+  const { session: _session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -16,12 +15,11 @@ const Root = (): React.ReactElement => {
     );
   }
 
-  return session ? (
+  // Always render App inside LobbyProvider to allow unauthenticated users to join jams
+  return (
     <LobbyProvider>
       <App />
     </LobbyProvider>
-  ) : (
-    <LoginPage />
   );
 };
 

@@ -20,6 +20,51 @@ function sanitiseParticipants(participants: Map<string, Participant>) {
 
 function isValidState(s: unknown): s is Partial<LobbyState> {
   if (typeof s !== 'object' || s === null) return false;
+
+  const state = s as Partial<LobbyState>;
+
+  // Validate sheetText
+  if ('sheetText' in state) {
+    if (typeof state.sheetText !== 'string') return false;
+    if (state.sheetText.length > 100000) return false; // 100KB limit
+  }
+
+  // Validate semitones
+  if ('semitones' in state) {
+    if (typeof state.semitones !== 'number') return false;
+    if (!Number.isInteger(state.semitones)) return false;
+    if (Math.abs(state.semitones) > 12) return false; // +/- 1 octave max
+  }
+
+  // Validate strategy
+  if ('strategy' in state) {
+    if (state.strategy !== 'semitone' && state.strategy !== 'capo') return false;
+  }
+
+  // Validate capoFret
+  if ('capoFret' in state) {
+    if (typeof state.capoFret !== 'number') return false;
+    if (!Number.isInteger(state.capoFret)) return false;
+    if (state.capoFret < 0 || state.capoFret > 12) return false;
+  }
+
+  // Validate useFlats
+  if ('useFlats' in state) {
+    if (typeof state.useFlats !== 'boolean') return false;
+  }
+
+  // Validate scrollY
+  if ('scrollY' in state) {
+    if (typeof state.scrollY !== 'number') return false;
+    if (state.scrollY < 0 || state.scrollY > 1) return false;
+  }
+
+  // Validate detectedKey
+  if ('detectedKey' in state) {
+    if (state.detectedKey !== null && typeof state.detectedKey !== 'string') return false;
+    if (typeof state.detectedKey === 'string' && state.detectedKey.length > 10) return false;
+  }
+
   return true;
 }
 
@@ -28,10 +73,15 @@ export function registerLobbyHandlers(io: Server, socket: Socket, store: LobbySt
   // Leader creates a new lobby, gets back the generated code.
   socket.on('lobby:create', (payload: CreateLobbyPayload) => {
     try {
-      const displayName =
-        typeof payload?.displayName === 'string' && payload.displayName.trim()
-          ? payload.displayName.trim().slice(0, 32)
-          : 'Leader';
+      let displayName = 'Leader';
+      if (typeof payload?.displayName === 'string' && payload.displayName.trim()) {
+        const trimmed = payload.displayName.trim();
+        if (trimmed.length > 32) {
+          socket.emit('lobby:error', { message: 'Display name must be 32 characters or less' });
+          return;
+        }
+        displayName = trimmed;
+      }
 
       if (!isValidState(payload?.initialState)) {
         socket.emit('lobby:error', { message: 'initialState is required' });
@@ -58,10 +108,16 @@ export function registerLobbyHandlers(io: Server, socket: Socket, store: LobbySt
   socket.on('lobby:join', (payload: JoinLobbyPayload) => {
     try {
       const code = typeof payload?.code === 'string' ? payload.code.toUpperCase().trim() : '';
-      const displayName =
-        typeof payload?.displayName === 'string' && payload.displayName.trim()
-          ? payload.displayName.trim().slice(0, 32)
-          : 'Guest';
+
+      let displayName = 'Guest';
+      if (typeof payload?.displayName === 'string' && payload.displayName.trim()) {
+        const trimmed = payload.displayName.trim();
+        if (trimmed.length > 32) {
+          socket.emit('lobby:error', { message: 'Display name must be 32 characters or less' });
+          return;
+        }
+        displayName = trimmed;
+      }
 
       if (code.length !== 4) {
         socket.emit('lobby:error', { message: 'Lobby code must be 4 characters' });

@@ -1,6 +1,20 @@
-.PHONY: format-code lint build dev run-tests docker-build docker-up docker-down docker-logs deploy
+.PHONY: help format-code lint build dev run-tests test-watch test-coverage deploy
 
-# ── Local dev (no Docker) ──────────────────────────────────────────────────────
+help:
+	@echo "Backend Commands"
+	@echo "================"
+	@echo ""
+	@echo "  make dev              - Start dev server with hot-reload (port 5001)"
+	@echo "  make build            - Compile TypeScript to JavaScript"
+	@echo "  make lint             - Check code style"
+	@echo "  make format-code      - Format and fix lint issues"
+	@echo "  make run-tests        - Run tests once"
+	@echo "  make test-watch       - Run tests in watch mode"
+	@echo "  make test-coverage    - Run tests with coverage report"
+	@echo "  make deploy           - Trigger Render deployment"
+	@echo ""
+
+# ── Local Development ──────────────────────────────────────────────────────────
 format-code:
 	npm run format
 	npm run lint:fix
@@ -22,23 +36,6 @@ test-watch:
 
 test-coverage:
 	npm run test:coverage
-
-# ── Docker (local development) ────────────────────────────────────────────────
-# Builds the backend image only
-docker-build:
-	docker compose -f ../docker-compose.yml build backend
-
-# Start backend container in foreground
-docker-up:
-	docker compose -f ../docker-compose.yml up backend
-
-# Stop and remove backend container
-docker-down:
-	docker compose -f ../docker-compose.yml down
-
-# Tail backend container logs
-docker-logs:
-	docker compose -f ../docker-compose.yml logs -f backend
 
 # ── Deploy to Render ──────────────────────────────────────────────────────────
 # Trigger a manual Render deploy via the Render Deploy Hook URL.

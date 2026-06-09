@@ -1,5 +1,23 @@
+# ============================================================================
+# ChordShift - Production Docker Compose
+# ============================================================================
+# Builds optimized production images for deployment.
+# For local development, use `npm run dev` in backend/ and frontend/ directly.
+#
+# Backend: Uses backend/.env for runtime environment variables
+# Frontend: Uses root .env for build-time args (VITE_* variables)
+#
+# Usage:
+#   docker-compose up --build    # Build and run both services
+#   docker-compose up -d         # Run in background
+#   docker-compose logs -f       # Follow logs
+#   docker-compose down          # Stop and remove containers
+#   make docker                  # Shortcut via Makefile
+# ============================================================================
+
 services:
   backend:
+    container_name: chord-shift-backend
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -7,20 +25,26 @@ services:
       - '5001:5001'
     env_file:
       - backend/.env
+    environment:
+      - NODE_ENV=production
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:5001/']
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
+    networks:
+      - chord-shift-network
 
   frontend:
+    container_name: chord-shift-frontend
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
         VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
     ports:
       - '3000:80'
@@ -28,3 +52,15 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:80/chord-shift/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - chord-shift-network
+
+networks:
+  chord-shift-network:
+    driver: bridge

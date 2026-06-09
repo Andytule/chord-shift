@@ -24,6 +24,7 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
   // Host: song selection
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [sheetsLoading, setSheetsLoading] = useState(false);
+  // Default to current sheet if available, otherwise blank sheet (null)
   const [selectedSheetId, setSelectedSheetId] = useState<number | 'current' | null>(
     initialState ? 'current' : null
   );
@@ -80,30 +81,39 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
     }
   };
 
-  const buildLobbyState = (): LobbyState | null => {
+  const buildLobbyState = (): LobbyState => {
     if (selectedSheetId === 'current' && initialState) {
       return initialState;
     }
     if (typeof selectedSheetId === 'number') {
       const sheet = sheets.find((s) => s.id === selectedSheetId);
-      if (!sheet) return null;
-      return {
-        sheetText: sheet.sheet_text,
-        semitones: 0,
-        strategy: 'semitone',
-        capoFret: 0,
-        useFlats: false,
-        scrollY: 0,
-        detectedKey: sheet.key,
-      };
+      if (sheet) {
+        return {
+          sheetText: sheet.sheet_text,
+          semitones: 0,
+          strategy: 'semitone',
+          capoFret: 0,
+          useFlats: false,
+          scrollY: 0,
+          detectedKey: sheet.key,
+        };
+      }
     }
-    return null;
+    // Default empty state when no sheet is selected
+    return {
+      sheetText: '',
+      semitones: 0,
+      strategy: 'semitone',
+      capoFret: 0,
+      useFlats: false,
+      scrollY: 0,
+      detectedKey: null,
+    };
   };
 
   const handleHost = () => {
     if (!displayName.trim()) return;
     const state = buildLobbyState();
-    if (!state) return;
     createLobby(displayName.trim(), state);
   };
 
@@ -113,8 +123,7 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
     joinLobby(code, joinName.trim());
   };
 
-  const canStart =
-    !isInLobby && !!displayName.trim() && selectedSheetId !== null && buildLobbyState() !== null;
+  const canStart = !isInLobby && !!displayName.trim();
 
   return (
     <div className="lobby-gate">
@@ -130,22 +139,22 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
           <p className="lobby-gate__subtitle">Play together in real time</p>
         </div>
 
-        {user && (
-          <div className="lobby-gate__tabs">
+        <div className="lobby-gate__tabs">
+          {user && (
             <button
               className={`lobby-gate__tab ${tab === 'host' ? 'lobby-gate__tab--active' : ''}`}
               onClick={() => setTab('host')}
             >
               Host
             </button>
-            <button
-              className={`lobby-gate__tab ${tab === 'join' ? 'lobby-gate__tab--active' : ''}`}
-              onClick={() => setTab('join')}
-            >
-              Join
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            className={`lobby-gate__tab ${tab === 'join' ? 'lobby-gate__tab--active' : ''}`}
+            onClick={() => setTab('join')}
+          >
+            Join
+          </button>
+        </div>
 
         {lobbyError && <div className="lobby-gate__error">{lobbyError}</div>}
 
@@ -162,8 +171,16 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
               placeholder="Your name"
             />
 
-            <label className="lobby-gate__label">Song to share</label>
+            <label className="lobby-gate__label">Song to share (optional)</label>
             <div className="lobby-gate__song-list">
+              <button
+                className={`lobby-gate__song-item ${selectedSheetId === null ? 'lobby-gate__song-item--selected' : ''}`}
+                onClick={() => setSelectedSheetId(null)}
+              >
+                <span className="lobby-gate__song-badge">Empty</span>
+                <span className="lobby-gate__song-name">Start with blank sheet</span>
+              </button>
+
               {initialState && (
                 <button
                   className={`lobby-gate__song-item ${selectedSheetId === 'current' ? 'lobby-gate__song-item--selected' : ''}`}
@@ -175,12 +192,6 @@ const LobbyGate: React.FC<Props> = ({ initialState, onBack }) => {
               )}
 
               {sheetsLoading && <p className="lobby-gate__hint">Loading your songs…</p>}
-
-              {!sheetsLoading && sheets.length === 0 && !initialState && (
-                <p className="lobby-gate__hint">
-                  No saved songs yet. Open one in the editor first.
-                </p>
-              )}
 
               {sheets.map((sheet) => (
                 <button

@@ -46,6 +46,8 @@ export const LobbyProvider: React.FC<LobbyProviderProps> = ({ children, onLobbyC
   const [lobbyError, setLobbyError] = useState<string | null>(null);
 
   const codeRef = useRef<string | null>(null);
+  const displayNameRef = useRef<string | null>(null);
+  const initialStateRef = useRef<LobbyState | null>(null);
 
   const clearLobby = useCallback(() => {
     setLobbyCode(null);
@@ -53,6 +55,8 @@ export const LobbyProvider: React.FC<LobbyProviderProps> = ({ children, onLobbyC
     setParticipants([]);
     setLeaderState(null);
     codeRef.current = null;
+    displayNameRef.current = null;
+    initialStateRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -115,6 +119,34 @@ export const LobbyProvider: React.FC<LobbyProviderProps> = ({ children, onLobbyC
       setLobbyError(message);
     });
 
+    socket.on('disconnect', (reason) => {
+      console.warn('[lobby] Socket disconnected:', reason);
+      if (reason === 'io server disconnect') {
+        clearLobby();
+        onLobbyClosed?.('Disconnected from server');
+      }
+    });
+
+    socket.on('connect', () => {
+      console.warn('[lobby] Socket reconnected');
+      if (codeRef.current && displayNameRef.current) {
+        const wasLeader = lobbyRole === 'leader';
+        if (wasLeader && initialStateRef.current) {
+          console.warn('[lobby] Recreating lobby after reconnect');
+          socket.emit('lobby:create', {
+            displayName: displayNameRef.current,
+            initialState: initialStateRef.current,
+          });
+        } else if (!wasLeader) {
+          console.warn('[lobby] Rejoining lobby after reconnect');
+          socket.emit('lobby:join', {
+            code: codeRef.current,
+            displayName: displayNameRef.current,
+          });
+        }
+      }
+    });
+
     return () => {
       socket.off('lobby:created');
       socket.off('lobby:joined');
@@ -122,16 +154,21 @@ export const LobbyProvider: React.FC<LobbyProviderProps> = ({ children, onLobbyC
       socket.off('lobby:participants');
       socket.off('lobby:closed');
       socket.off('lobby:error');
+      socket.off('disconnect');
+      socket.off('connect');
     };
-  }, [clearLobby, onLobbyClosed]);
+  }, [clearLobby, onLobbyClosed, lobbyRole]);
 
   const createLobby = useCallback((displayName: string, initialState: LobbyState) => {
     const socket = getSocket();
+    displayNameRef.current = displayName;
+    initialStateRef.current = initialState;
     socket.emit('lobby:create', { displayName, initialState });
   }, []);
 
   const joinLobby = useCallback((code: string, displayName: string) => {
     const socket = getSocket();
+    displayNameRef.current = displayName;
     socket.emit('lobby:join', { code: code.toUpperCase(), displayName });
   }, []);
 
@@ -144,13 +181,22 @@ export const LobbyProvider: React.FC<LobbyProviderProps> = ({ children, onLobbyC
 
   const broadcastStateUpdate = useCallback((patch: Partial<LobbyState>) => {
     const socket = getSocket();
+    if (!socket.connected) {
+      console.warn('[lobby] Cannot broadcast state - socket disconnected');
+      setLobbyError('Connection lost. Reconnecting...');
+      return;
+    }
     if (codeRef.current) {
+      if (initialStateRef.current) {
+        initialStateRef.current = { ...initialStateRef.current, ...patch };
+      }
       socket.emit('lobby:state_update', { code: codeRef.current, state: patch });
     }
   }, []);
 
   const broadcastScrollSync = useCallback((scrollY: number) => {
     const socket = getSocket();
+    if (!socket.connected) return;
     if (codeRef.current) {
       socket.emit('lobby:scroll_sync', { code: codeRef.current, scrollY });
     }

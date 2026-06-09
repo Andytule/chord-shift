@@ -46,6 +46,38 @@ io.on('connection', (socket) => {
   registerLobbyHandlers(io, socket, lobbyStore);
 });
 
+// ─── Lobby Cleanup ────────────────────────────────────────────────────────────
+
+// Clean up stale lobbies every 5 minutes
+const LOBBY_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+
+  // Get all lobby codes first to avoid modification during iteration
+  const allLobbies = Array.from(lobbyStore['lobbies'].entries());
+
+  for (const [code, lobby] of allLobbies) {
+    const age = now - lobby.createdAt.getTime();
+    if (age > LOBBY_TTL_MS) {
+      console.log(
+        `[lobby] Cleaning up stale lobby ${code} (age: ${Math.round(age / 1000 / 60)}min)`
+      );
+      io.to(code).emit('lobby:closed', {
+        reason: 'Session expired after 4 hours of inactivity',
+      });
+      lobbyStore.closeLobby(code);
+      cleanedCount++;
+    }
+  }
+
+  if (cleanedCount > 0) {
+    console.log(`[lobby] Cleaned up ${cleanedCount} stale lobbies. Active: ${lobbyStore.count()}`);
+  }
+}, CLEANUP_INTERVAL_MS);
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 httpServer.listen(port, () => {

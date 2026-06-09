@@ -37,6 +37,21 @@ const LeaderPanel: React.FC<LeaderPanelProps> = ({
   const { broadcastScrollSync, broadcastStateUpdate } = useLobby();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollThrottleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSheetTextRef = useRef(sheetText);
+  const broadcastRef = useRef(broadcastStateUpdate);
+
+  // Keep broadcastRef current
+  useEffect(() => {
+    broadcastRef.current = broadcastStateUpdate;
+  }, [broadcastStateUpdate]);
+
+  // Broadcast sheetText whenever it changes (from transpose or manual edit)
+  useEffect(() => {
+    if (sheetText !== prevSheetTextRef.current) {
+      broadcastRef.current({ sheetText });
+      prevSheetTextRef.current = sheetText;
+    }
+  }, [sheetText]);
 
   const handleScroll = () => {
     if (scrollThrottleRef.current) return;
@@ -51,9 +66,29 @@ const LeaderPanel: React.FC<LeaderPanelProps> = ({
     }, 100);
   };
 
+  // Cleanup scroll throttle on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollThrottleRef.current) {
+        clearTimeout(scrollThrottleRef.current);
+        scrollThrottleRef.current = null;
+      }
+    };
+  }, []);
+
   const handleTextChange = (v: string) => {
     onSheetTextChange(v);
-    broadcastStateUpdate({ sheetText: v });
+    // Broadcasting happens automatically via useEffect on sheetText change
+  };
+
+  const handleTransposeWithBroadcast = async (delta: number) => {
+    await onTranspose(delta);
+    // onTranspose updates sheetText in App.tsx asynchronously via setState.
+    // We need to broadcast both the new sheetText and semitones, but we don't
+    // have the new sheetText yet. For now, broadcast semitones and rely on
+    // a useEffect to catch the sheetText update.
+    // TODO: This is a race condition - needs architectural fix
+    broadcastStateUpdate({ semitones: semitones + delta });
   };
 
   return (
@@ -63,7 +98,7 @@ const LeaderPanel: React.FC<LeaderPanelProps> = ({
         selectedKey={selectedKey}
         sheetName={sheetName}
         useFlats={useFlats}
-        onTransposeImmediate={onTranspose}
+        onTransposeImmediate={handleTransposeWithBroadcast}
         onKeyChange={(k) => {
           onKeyChange(k);
           broadcastStateUpdate({ detectedKey: k });
@@ -102,25 +137,31 @@ const FollowerPanel: React.FC<FollowerPanelProps> = ({ leaderState }) => {
   const [localLoading, setLocalLoading] = useState(false);
 
   // Sync displayed text when leader state changes or capo offset changes.
-  // The leader's sheetText is already the raw/original text — we apply
-  // leaderState.semitones (leader's transposition) PLUS our personal capoOffset.
+  // The leader's sheetText is already transposed to their key — we only apply
+  // our personal capoOffset on top of what the leader sees.
+  // Debounce to avoid excessive API calls if leader is typing rapidly.
   useEffect(() => {
-    const totalSemitones = leaderState.semitones + capoOffset;
-    if (totalSemitones === 0) {
+    if (capoOffset === 0) {
       setDisplayText(leaderState.sheetText);
+      setLocalLoading(false);
       return;
     }
+
     setLocalLoading(true);
-    transposeSheet({
-      sheetText: leaderState.sheetText,
-      semitones: totalSemitones,
-      strategy: 'semitone',
-      useFlats: leaderState.useFlats,
-    })
-      .then((res: TransposeResponse) => setDisplayText(res.transposedText))
-      .catch(() => setDisplayText(leaderState.sheetText))
-      .finally(() => setLocalLoading(false));
-  }, [leaderState.sheetText, leaderState.semitones, leaderState.useFlats, capoOffset]);
+    const timer = setTimeout(() => {
+      transposeSheet({
+        sheetText: leaderState.sheetText,
+        semitones: capoOffset,
+        strategy: 'semitone',
+        useFlats: leaderState.useFlats,
+      })
+        .then((res: TransposeResponse) => setDisplayText(res.transposedText))
+        .catch(() => setDisplayText(leaderState.sheetText))
+        .finally(() => setLocalLoading(false));
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [leaderState.sheetText, leaderState.useFlats, capoOffset]);
 
   // Scroll sync from server
   useEffect(() => {
