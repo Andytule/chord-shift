@@ -6,18 +6,16 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
-// Lazy singleton — created on first request so process.env is guaranteed
-// to be populated by the time this runs (Docker env vars, dotenv, etc.)
+// Lazily initialised so process.env is populated before the client is
+// created (works for both Docker/production and the Jest mock in tests).
 let _supabase: SupabaseClient<Database> | null = null;
 
 function getSupabase(): SupabaseClient<Database> {
   if (!_supabase) {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_ANON_KEY;
-    if (!url || !key) {
-      throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
-    }
-    _supabase = createClient<Database>(url, key);
+    _supabase = createClient<Database>(
+      process.env.SUPABASE_URL ?? '',
+      process.env.SUPABASE_ANON_KEY ?? ''
+    );
   }
   return _supabase;
 }
